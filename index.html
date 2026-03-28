@@ -49,11 +49,13 @@
     // ==========================================
     // ⚠️ GEMINI API KEY
     // ==========================================
-    const apiKey = "AIzaSyBs6FLaXrpHqF7QsY1ocsbP8hru90NR4_4"; 
+    // Must be empty for Canvas preview to work. 
+    // Paste your key ("AIzaSyBs6FLaXrpHqF7QsY1ocsbP8hru90NR4_4") here BEFORE deploying to Netlify!
+    const apiKey = ""; 
 
     // --- AI Helpers ---
     const transliterateText = async (text, target) => {
-      if (!text.trim() || !apiKey) return '';
+      if (!text.trim()) return '';
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
       const prompt = target === 'roman'
         ? `Transliterate the following Hindi text into Roman (Hinglish) script. Return ONLY the text:\n${text}`
@@ -67,11 +69,14 @@
         });
         const data = await response.json();
         return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
-      } catch (e) { return ''; }
+      } catch (e) { 
+        console.error("Transliteration Error:", e);
+        return ''; 
+      }
     };
 
     const extractUrduVocabulary = async (text) => {
-      if (!text.trim() || !apiKey) return '';
+      if (!text.trim()) return '';
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
       const prompt = `Extract difficult Urdu words from this poem. Return a list in this format: Word (Devanagari) - Hindi Meaning - English Meaning. Poem:\n${text}`;
 
@@ -83,14 +88,13 @@
         });
         const data = await response.json();
         return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
-      } catch (e) { return ''; }
+      } catch (e) { 
+        console.error("Vocabulary Extraction Error:", e);
+        return ''; 
+      }
     };
 
     const transcribeAudio = async (base64Data, mimeType) => {
-      if (!apiKey) {
-        alert("Please add your Gemini API Key in the code to use AI Transcription.");
-        return '';
-      }
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
       const base64Clean = base64Data.split(',')[1];
       const prompt = "Transcribe this Hindi audio into poetic Hindi (Devanagari). Return only the text.";
@@ -107,7 +111,10 @@
         });
         const data = await response.json();
         return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
-      } catch (e) { return ''; }
+      } catch (e) { 
+        console.error("Transcription Error:", e);
+        return ''; 
+      }
     };
 
     // --- Media Embed Helper ---
@@ -719,15 +726,21 @@
         const autoSync = async (text, field) => {
           if (!text.trim()) return;
           setAiProcessing(true);
-          if (field === 'hindi') {
-            const res = await transliterateText(text, 'roman');
-            const vocab = await extractUrduVocabulary(text);
-            setFormData(p => ({ ...p, romanText: res, vocabulary: vocab }));
-          } else if (field === 'roman') {
-            const res = await transliterateText(text, 'hindi');
-            setFormData(p => ({ ...p, hindiText: res }));
+          try {
+            if (field === 'hindi') {
+              const res = await transliterateText(text, 'roman');
+              const vocab = await extractUrduVocabulary(text);
+              if (res) setFormData(p => ({ ...p, romanText: res }));
+              if (vocab) setFormData(p => ({ ...p, vocabulary: vocab }));
+            } else if (field === 'roman') {
+              const res = await transliterateText(text, 'hindi');
+              if (res) setFormData(p => ({ ...p, hindiText: res }));
+            }
+          } catch(err) {
+             console.error(err);
+          } finally {
+             setAiProcessing(false);
           }
-          setAiProcessing(false);
         };
 
         const handleTextChange = (e, field) => {
@@ -910,14 +923,18 @@
                     <div className="space-y-3">
                       <div className="flex justify-between items-center ml-1">
                         <label className="text-[10px] font-black uppercase text-amber-600 tracking-widest">Hindi Text (Auto-Syncs)</label>
-                        <button type="button" onClick={() => autoSync(formData.hindiText, 'hindi')} disabled={aiProcessing || !formData.hindiText} className="text-[10px] bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-bold uppercase tracking-widest hover:bg-amber-200 transition disabled:opacity-50">Generate Roman</button>
+                        <button type="button" onClick={(e) => { e.preventDefault(); autoSync(formData.hindiText, 'hindi'); }} disabled={aiProcessing || !formData.hindiText} className="flex items-center gap-1.5 text-[10px] bg-amber-100 text-amber-800 px-3 py-1.5 rounded-full font-bold uppercase tracking-widest hover:bg-amber-200 transition disabled:opacity-50">
+                          {aiProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />} Generate Roman
+                        </button>
                       </div>
                       <textarea placeholder="Write here..." rows="12" value={formData.hindiText} onChange={e => handleTextChange(e, 'hindi')} className="w-full border p-6 rounded-[1.5rem] font-serif text-xl md:text-2xl border-stone-200 focus:ring-2 focus:ring-amber-500 outline-none shadow-sm leading-loose" />
                     </div>
                     <div className="space-y-3">
                       <div className="flex justify-between items-center ml-1">
                         <label className="text-[10px] font-black uppercase text-stone-400 tracking-widest">Transliteration (Roman)</label>
-                        <button type="button" onClick={() => autoSync(formData.romanText, 'roman')} disabled={aiProcessing || !formData.romanText} className="text-[10px] bg-stone-200 text-stone-600 px-3 py-1 rounded-full font-bold uppercase tracking-widest hover:bg-stone-300 transition disabled:opacity-50">Generate Hindi</button>
+                        <button type="button" onClick={(e) => { e.preventDefault(); autoSync(formData.romanText, 'roman'); }} disabled={aiProcessing || !formData.romanText} className="flex items-center gap-1.5 text-[10px] bg-stone-200 text-stone-600 px-3 py-1.5 rounded-full font-bold uppercase tracking-widest hover:bg-stone-300 transition disabled:opacity-50">
+                          {aiProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />} Generate Hindi
+                        </button>
                       </div>
                       <textarea placeholder="Auto-generated..." rows="12" value={formData.romanText} onChange={e => handleTextChange(e, 'roman')} className="w-full border p-6 rounded-[1.5rem] font-serif text-xl md:text-2xl italic bg-stone-50/50 border-stone-200 focus:ring-2 focus:ring-stone-400 outline-none shadow-sm leading-loose text-stone-600" />
                     </div>
