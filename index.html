@@ -5,10 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Meri Pasand - Meri Awaaz Me</title>
   
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- Babel for JSX -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body class="bg-stone-50">
@@ -56,7 +54,7 @@
     // --- AI Helpers ---
     const transliterateText = async (text, target) => {
       if (!text.trim() || !apiKey) return '';
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
       const prompt = target === 'roman'
         ? `Transliterate the following Hindi text into Roman (Hinglish) script. Return ONLY the text:\n${text}`
         : `Transliterate the following Roman (Hinglish) text into Hindi (Devanagari). Return ONLY the text:\n${text}`;
@@ -74,7 +72,7 @@
 
     const extractUrduVocabulary = async (text) => {
       if (!text.trim() || !apiKey) return '';
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
       const prompt = `Extract difficult Urdu words from this poem. Return a list in this format: Word (Devanagari) - Hindi Meaning - English Meaning. Poem:\n${text}`;
 
       try {
@@ -93,7 +91,7 @@
         alert("Please add your Gemini API Key in the code to use AI Transcription.");
         return '';
       }
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
       const base64Clean = base64Data.split(',')[1];
       const prompt = "Transcribe this Hindi audio into poetic Hindi (Devanagari). Return only the text.";
 
@@ -649,7 +647,6 @@
                 streamRef.current.getTracks().forEach(track => track.stop());
               }
               
-              // Automatically detect the correct format for Safari vs Chrome
               const mimeType = mediaRecorder.current.mimeType || 'audio/webm';
               const blob = new Blob(chunks, { type: mimeType });
               
@@ -661,7 +658,6 @@
               const b64 = await blobToBase64(blob);
               setAudioData({ base64: b64, mimeType: mimeType });
 
-              // Assign the correct file extension
               let ext = 'webm';
               if (mimeType.includes('mp4')) ext = 'm4a';
               else if (mimeType.includes('ogg')) ext = 'ogg';
@@ -674,7 +670,7 @@
                 
                 task.on('state_changed', 
                   (s) => setProgress(Math.round((s.bytesTransferred / s.totalBytes) * 100)), 
-                  (err) => { setFormError("Storage Error: " + err.message); setUploading(false); },
+                  (err) => { setFormError("Storage Error: " + err.message + " (Check Firebase Rules)"); setUploading(false); },
                   async () => {
                     try {
                       const url = await getDownloadURL(task.snapshot.ref);
@@ -689,7 +685,6 @@
               }
             };
             
-            // Start without timeslices to avoid Safari bugs
             mediaRecorder.current.start(); 
             setIsRecording(true);
           } catch(e) { alert("Mic error: " + e.message); }
@@ -913,11 +908,17 @@
                   <div className="grid md:grid-cols-2 gap-10 relative">
                     {aiProcessing && <div className="absolute inset-0 bg-white/80 z-20 flex flex-col items-center justify-center backdrop-blur-sm rounded-[2rem] gap-4"><Loader2 className="animate-spin w-12 h-12 text-amber-600" /><span className="text-xs font-black tracking-widest uppercase text-amber-600">AI is thinking...</span></div>}
                     <div className="space-y-3">
-                      <label className="text-[10px] font-black uppercase text-amber-600 tracking-widest ml-1">Hindi Text (Auto-Syncs)</label>
+                      <div className="flex justify-between items-center ml-1">
+                        <label className="text-[10px] font-black uppercase text-amber-600 tracking-widest">Hindi Text (Auto-Syncs)</label>
+                        <button type="button" onClick={() => autoSync(formData.hindiText, 'hindi')} disabled={aiProcessing || !formData.hindiText} className="text-[10px] bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-bold uppercase tracking-widest hover:bg-amber-200 transition disabled:opacity-50">Generate Roman</button>
+                      </div>
                       <textarea placeholder="Write here..." rows="12" value={formData.hindiText} onChange={e => handleTextChange(e, 'hindi')} className="w-full border p-6 rounded-[1.5rem] font-serif text-xl md:text-2xl border-stone-200 focus:ring-2 focus:ring-amber-500 outline-none shadow-sm leading-loose" />
                     </div>
                     <div className="space-y-3">
-                      <label className="text-[10px] font-black uppercase text-stone-400 tracking-widest ml-1">Transliteration (Roman)</label>
+                      <div className="flex justify-between items-center ml-1">
+                        <label className="text-[10px] font-black uppercase text-stone-400 tracking-widest">Transliteration (Roman)</label>
+                        <button type="button" onClick={() => autoSync(formData.romanText, 'roman')} disabled={aiProcessing || !formData.romanText} className="text-[10px] bg-stone-200 text-stone-600 px-3 py-1 rounded-full font-bold uppercase tracking-widest hover:bg-stone-300 transition disabled:opacity-50">Generate Hindi</button>
+                      </div>
                       <textarea placeholder="Auto-generated..." rows="12" value={formData.romanText} onChange={e => handleTextChange(e, 'roman')} className="w-full border p-6 rounded-[1.5rem] font-serif text-xl md:text-2xl italic bg-stone-50/50 border-stone-200 focus:ring-2 focus:ring-stone-400 outline-none shadow-sm leading-loose text-stone-600" />
                     </div>
                   </div>
