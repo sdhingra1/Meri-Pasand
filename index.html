@@ -49,13 +49,18 @@
     // ==========================================
     // ⚠️ GEMINI API KEY
     // ==========================================
-    // This key is required for Netlify to make the AI calls work on the live site.
-    const apiKey = "AIzaSyBs6FLaXrpHqF7QsY1ocsbP8hru90NR4_4"; 
+    // Leave EMPTY ("") when testing in the Canvas Preview.
+    // PASTE YOUR KEY inside the quotes BEFORE deploying to Netlify!
+    const apiKey = ""; 
+
+    // Determine the correct model: Canvas preview requires a specific preview model.
+    // Live Netlify (with your real key) will automatically use the standard gemini-2.5-flash model.
+    const getModelName = () => apiKey === "" ? "gemini-2.5-flash-preview-09-2025" : "gemini-2.5-flash";
 
     // --- AI Helpers ---
     const transliterateText = async (text, target) => {
       if (!text.trim()) return '';
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${getModelName()}:generateContent?key=${apiKey}`;
       const prompt = target === 'roman'
         ? `Transliterate the following Hindi text into Roman (Hinglish) script. Return ONLY the text:\n${text}`
         : `Transliterate the following Roman (Hinglish) text into Hindi (Devanagari). Return ONLY the text:\n${text}`;
@@ -76,7 +81,7 @@
 
     const extractUrduVocabulary = async (text) => {
       if (!text.trim()) return '';
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${getModelName()}:generateContent?key=${apiKey}`;
       const prompt = `Extract difficult Urdu words from this poem. Return a list in this format: Word (Devanagari) - Hindi Meaning - English Meaning. Poem:\n${text}`;
 
       try {
@@ -94,7 +99,7 @@
     };
 
     const transcribeAudio = async (base64Data, mimeType) => {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${getModelName()}:generateContent?key=${apiKey}`;
       const base64Clean = base64Data.split(',')[1];
       const prompt = "Transcribe this Hindi audio into poetic Hindi (Devanagari). Return only the text.";
 
