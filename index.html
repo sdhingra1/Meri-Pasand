@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Meri Pasand - Meri Awaaz Me</title>
+  <title>Meri Pasand - Meri Awaaz Me | मेरी पसंद - मेरी आवाज़ में</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   
@@ -23,7 +23,6 @@
       ExternalLink, Link as LinkIcon, Search, Filter, Star 
     } from 'https://esm.sh/lucide-react@0.263.1';
     
-    // Official Google gstatic CDN imports for Firebase
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
     import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
     import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
@@ -49,12 +48,8 @@
     // ==========================================
     // ⚠️ GEMINI API KEY
     // ==========================================
-    // Leave EMPTY ("") when testing in the Canvas Preview.
-    // PASTE YOUR KEY inside the quotes BEFORE deploying to Netlify!
     const apiKey = ""; 
 
-    // Determine the correct model: Canvas preview requires a specific preview model.
-    // Live Netlify (with your real key) will automatically use the standard gemini-2.5-flash model.
     const getModelName = () => apiKey === "" ? "gemini-2.5-flash-preview-09-2025" : "gemini-2.5-flash";
 
     // --- AI Helpers ---
@@ -210,7 +205,11 @@
               <div className="bg-stone-800 p-2 rounded-xl">
                  <BookOpen className="text-amber-500 w-6 h-6" />
               </div>
-              <h1 className="text-xl font-serif font-bold tracking-widest hidden sm:block uppercase">Meri Pasand - Meri Awaaz me</h1>
+              <h1 className="text-xl font-serif font-bold hidden sm:flex items-center gap-2">
+                <span className="tracking-widest uppercase">Meri Pasand</span>
+                <span className="text-stone-500 font-light">|</span>
+                <span className="text-amber-500 font-medium">मेरी पसंद</span>
+              </h1>
             </div>
             <div className="flex gap-4">
               {isAdmin ? (
@@ -261,8 +260,10 @@
         return (
           <div className="max-w-7xl mx-auto p-4 md:p-8">
             <div className="text-center mb-10 mt-4 md:mt-8">
-              <h2 className="text-4xl md:text-6xl font-serif font-black text-stone-800 mb-4 tracking-tight leading-tight">Meri Pasand <br className="md:hidden" /> <span className="text-amber-600">- Meri Awaaz Me</span></h2>
-              <p className="text-stone-500 italic text-lg md:text-xl mb-8 max-w-2xl mx-auto">Explore a curated collection of beautiful Hindi and Urdu poetry, complete with transliterations, meanings, and audio recitations.</p>
+              <h2 className="text-4xl md:text-6xl font-serif font-black text-stone-800 tracking-tight leading-tight">
+                मेरी पसंद <span className="text-amber-600">- मेरी आवाज़ में</span>
+                <span className="block mt-4 text-3xl md:text-5xl text-stone-600 font-medium">Meri Pasand <span className="text-amber-500">- Meri Awaaz Me</span></span>
+              </h2>
             </div>
 
             <div className="bg-white p-4 md:p-6 rounded-[2rem] shadow-lg border border-stone-200 mb-10 sticky top-[76px] z-10">
@@ -271,7 +272,7 @@
                     <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-stone-400 w-5 h-5" />
                     <input 
                       type="text" 
-                      placeholder="Search by title, poet, or words in poem..." 
+                      placeholder="Search / खोजें..." 
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full bg-stone-50 border border-stone-200 py-3 pl-12 pr-4 rounded-full outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition text-stone-700 font-medium"
@@ -747,6 +748,26 @@
           }
         };
 
+        const manualSync = async (val, fieldType, sourceLang) => {
+          if (!val.trim()) return;
+          setAiProcessing(true);
+          try {
+            const targetLang = sourceLang === 'hindi' ? 'roman' : 'hindi';
+            const res = await transliterateText(val, targetLang);
+            if (res) {
+              if (fieldType === 'title') {
+                setFormData(p => ({ ...p, [sourceLang === 'hindi' ? 'title' : 'titleHindi']: res }));
+              } else if (fieldType === 'poet') {
+                setFormData(p => ({ ...p, [sourceLang === 'hindi' ? 'poet' : 'poetHindi']: res }));
+              }
+            }
+          } catch(err) {
+             console.error(err);
+          } finally {
+             setAiProcessing(false);
+          }
+        };
+
         const handleTextChange = (e, field) => {
           const val = e.target.value;
           setFormData(p => ({ ...p, [`${field}Text`]: val }));
@@ -838,19 +859,39 @@
                 <form onSubmit={savePoem} className="space-y-12">
                   <div className="grid md:grid-cols-2 gap-8">
                     <div className="space-y-3">
-                      <label className="text-[10px] font-black uppercase text-amber-600 tracking-widest ml-1">Title (Hindi)</label>
+                      <div className="flex justify-between items-center ml-1">
+                        <label className="text-[10px] font-black uppercase text-amber-600 tracking-widest">Title in Devanagari Script</label>
+                        <button type="button" onClick={(e) => { e.preventDefault(); manualSync(formData.title, 'title', 'roman'); }} disabled={aiProcessing || !formData.title} className="flex items-center gap-1.5 text-[10px] bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-bold uppercase tracking-widest hover:bg-amber-200 transition disabled:opacity-50">
+                          {aiProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />} Auto-Generate
+                        </button>
+                      </div>
                       <input placeholder="शब्द..." value={formData.titleHindi} onChange={e => handleTitleChange(e, 'hindi')} className="w-full border-b-2 border-stone-200 p-4 outline-none focus:border-amber-500 transition bg-stone-50/50 rounded-t-xl text-xl font-serif" />
                     </div>
                     <div className="space-y-3">
-                      <label className="text-[10px] font-black uppercase text-stone-400 tracking-widest ml-1">Title (Roman/English)</label>
+                      <div className="flex justify-between items-center ml-1">
+                        <label className="text-[10px] font-black uppercase text-stone-400 tracking-widest">Title (Roman/English)</label>
+                        <button type="button" onClick={(e) => { e.preventDefault(); manualSync(formData.titleHindi, 'title', 'hindi'); }} disabled={aiProcessing || !formData.titleHindi} className="flex items-center gap-1.5 text-[10px] bg-stone-200 text-stone-600 px-3 py-1 rounded-full font-bold uppercase tracking-widest hover:bg-stone-300 transition disabled:opacity-50">
+                          {aiProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />} Auto-Generate
+                        </button>
+                      </div>
                       <input placeholder="Shabd..." value={formData.title} onChange={e => handleTitleChange(e, 'roman')} className="w-full border-b-2 border-stone-200 p-4 outline-none focus:border-amber-500 transition bg-stone-50/50 rounded-t-xl text-xl" />
                     </div>
                     <div className="space-y-3">
-                      <label className="text-[10px] font-black uppercase text-amber-600 tracking-widest ml-1">Poet (Hindi)</label>
+                      <div className="flex justify-between items-center ml-1">
+                        <label className="text-[10px] font-black uppercase text-amber-600 tracking-widest">Poet in Devanagari Script</label>
+                        <button type="button" onClick={(e) => { e.preventDefault(); manualSync(formData.poet, 'poet', 'roman'); }} disabled={aiProcessing || !formData.poet} className="flex items-center gap-1.5 text-[10px] bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-bold uppercase tracking-widest hover:bg-amber-200 transition disabled:opacity-50">
+                          {aiProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />} Auto-Generate
+                        </button>
+                      </div>
                       <input placeholder="कवि..." value={formData.poetHindi} onChange={e => handlePoetChange(e, 'hindi')} className="w-full border-b-2 border-stone-200 p-4 outline-none focus:border-amber-500 transition bg-stone-50/50 rounded-t-xl font-serif" />
                     </div>
                     <div className="space-y-3">
-                      <label className="text-[10px] font-black uppercase text-stone-400 tracking-widest ml-1">Poet (Roman/English)</label>
+                      <div className="flex justify-between items-center ml-1">
+                        <label className="text-[10px] font-black uppercase text-stone-400 tracking-widest">Poet (Roman/English)</label>
+                        <button type="button" onClick={(e) => { e.preventDefault(); manualSync(formData.poetHindi, 'poet', 'hindi'); }} disabled={aiProcessing || !formData.poetHindi} className="flex items-center gap-1.5 text-[10px] bg-stone-200 text-stone-600 px-3 py-1 rounded-full font-bold uppercase tracking-widest hover:bg-stone-300 transition disabled:opacity-50">
+                          {aiProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />} Auto-Generate
+                        </button>
+                      </div>
                       <input placeholder="Kavi..." value={formData.poet} onChange={e => handlePoetChange(e, 'roman')} className="w-full border-b-2 border-stone-200 p-4 outline-none focus:border-amber-500 transition bg-stone-50/50 rounded-t-xl" />
                     </div>
                     <div className="space-y-3 md:col-span-2">
