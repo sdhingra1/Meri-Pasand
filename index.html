@@ -46,15 +46,15 @@
     const storage = getStorage(app);
 
     // ==========================================
-    // ⚠️ GEMINI API KEY (Optional now)
+    // ⚠️ GEMINI API KEY
     // ==========================================
     const apiKey = ""; 
 
     const getModelName = () => apiKey === "" ? "gemini-2.5-flash-preview-09-2025" : "gemini-2.5-flash";
 
-    // --- AI Helpers (Optional use via buttons) ---
+    // --- AI Helpers ---
     const transliterateText = async (text, target) => {
-      if (!text.trim() || !apiKey) return '';
+      if (!text.trim()) return '';
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${getModelName()}:generateContent?key=${apiKey}`;
       const prompt = target === 'roman'
         ? `Transliterate the following Hindi text into Roman (Hinglish) script. Return ONLY the text:\n${text}`
@@ -75,7 +75,7 @@
     };
 
     const extractUrduVocabulary = async (text) => {
-      if (!text.trim() || !apiKey) return '';
+      if (!text.trim()) return '';
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${getModelName()}:generateContent?key=${apiKey}`;
       const prompt = `Extract difficult Urdu words from this poem. Return a list in this format: Word (Devanagari) - Hindi Meaning - English Meaning. Poem:\n${text}`;
 
@@ -94,7 +94,7 @@
     };
 
     const extractPoemEssence = async (text) => {
-      if (!text.trim() || !apiKey) return '';
+      if (!text.trim()) return '';
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${getModelName()}:generateContent?key=${apiKey}`;
       const prompt = `Provide a beautiful, brief summary and essence of the following Hindi/Urdu poem in English or simple Hindi. Explain its core meaning and context in 2-3 short paragraphs. Poem:\n${text}`;
 
@@ -113,10 +113,6 @@
     };
 
     const transcribeAudio = async (base64Data, mimeType) => {
-      if (!apiKey) {
-        alert("Please add your Gemini API Key in the code to use AI Transcription.");
-        return '';
-      }
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${getModelName()}:generateContent?key=${apiKey}`;
       const base64Clean = base64Data.split(',')[1];
       const prompt = "Transcribe this Hindi audio into poetic Hindi (Devanagari). Return only the text.";
@@ -606,6 +602,9 @@
         
         const mediaRecorder = useRef(null);
         const streamRef = useRef(null);
+        const typingTimeout = useRef(null);
+        const titleTimeoutRef = useRef(null);
+        const poetTimeoutRef = useRef(null);
 
         const handleCreateNew = () => {
           setEditingPoem({ id: 'new' });
@@ -811,18 +810,46 @@
         const handleTextChange = (e, field) => {
           const val = e.target.value;
           setFormData(p => ({ ...p, [`${field}Text`]: val }));
+          if (typingTimeout.current) clearTimeout(typingTimeout.current);
+          typingTimeout.current = setTimeout(() => autoSync(val, field), 2500);
         };
 
         const handleTitleChange = (e, sourceLang) => {
           const val = e.target.value;
           const isHindi = sourceLang === 'hindi';
           setFormData(p => ({ ...p, [isHindi ? 'titleHindi' : 'title']: val }));
+          
+          if (titleTimeoutRef.current) clearTimeout(titleTimeoutRef.current);
+          titleTimeoutRef.current = setTimeout(async () => {
+            if (!val.trim()) return;
+            setAiProcessing(true);
+            try {
+              const targetLang = isHindi ? 'roman' : 'hindi';
+              const res = await transliterateText(val, targetLang);
+              if (res) setFormData(p => ({ ...p, [isHindi ? 'title' : 'titleHindi']: res }));
+            } finally {
+              setAiProcessing(false);
+            }
+          }, 1500);
         };
 
         const handlePoetChange = (e, sourceLang) => {
           const val = e.target.value;
           const isHindi = sourceLang === 'hindi';
           setFormData(p => ({ ...p, [isHindi ? 'poetHindi' : 'poet']: val }));
+          
+          if (poetTimeoutRef.current) clearTimeout(poetTimeoutRef.current);
+          poetTimeoutRef.current = setTimeout(async () => {
+            if (!val.trim()) return;
+            setAiProcessing(true);
+            try {
+              const targetLang = isHindi ? 'roman' : 'hindi';
+              const res = await transliterateText(val, targetLang);
+              if (res) setFormData(p => ({ ...p, [isHindi ? 'poet' : 'poetHindi']: res }));
+            } finally {
+              setAiProcessing(false);
+            }
+          }, 1500);
         };
 
         const savePoem = async (e) => {
