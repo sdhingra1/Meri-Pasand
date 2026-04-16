@@ -69,7 +69,7 @@
     // ==========================================
     // ⚠️ SETTINGS & AUTHOR INFO
     // ==========================================
-    const apiKey = ""; // <--- YAHAN APNI GEMINI API KEY DAALEIN ("AIzaSyBs...")
+    const apiKey = ""; // ⚠️ CANVAS PREVIEW KE LIYE ISE KHALI ("") RAKHNA ZAROORI HAI. Netlify par live karte waqt yahan apni key paste karein.
     const getModelName = () => "gemini-2.5-flash-preview-09-2025";
     const AUTHOR_NAME = "Sandeep Dhingra"; 
 
@@ -148,7 +148,7 @@
       return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : url;
     };
 
-    // --- REUSABLE UI COMPONENTS (MOVED OUTSIDE TO FIX STATE LOSS BUGS) ---
+    // --- REUSABLE UI COMPONENTS (MOVED OUTSIDE APP TO FIX FOCUS/STATE LOSS) ---
 
     const MediaRenderer = ({ url }) => {
       if (!url) return null;
@@ -761,7 +761,8 @@
           }
         };
         initAuth();
-        return onAuthStateChanged(auth, (u) => { setUser(u); setLoading(false); });
+        const unsubscribe = onAuthStateChanged(auth, (u) => { setUser(u); setLoading(false); });
+        return () => unsubscribe();
       }, []);
 
       useEffect(() => {
