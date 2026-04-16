@@ -1,34 +1,34 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { 
-  BookOpen, Play, Video, MessageSquare, Settings, 
-  Edit, Trash2, Plus, ChevronLeft, LogIn, LogOut, 
-  Save, X, Headphones, List, Mic, StopCircle, Upload, 
-  Loader2, Wand2, CheckCircle, AlertCircle, Info, 
-  ExternalLink, Link as LinkIcon, Search, Filter, Star,
-  Share2, Copy, Facebook, Instagram
+import {
+BookOpen, Play, Video, MessageSquare, Settings,
+Edit, Trash2, Plus, ChevronLeft, LogIn, LogOut,
+Save, X, Headphones, List, Mic, StopCircle, Upload,
+Loader2, Wand2, CheckCircle, AlertCircle, Info,
+ExternalLink, Link as LinkIcon, Search, Filter, Star,
+Share2, Copy, Facebook, Instagram
 } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
-import { 
-  getAuth, signInAnonymously, onAuthStateChanged 
+import {
+getAuth, signInAnonymously, onAuthStateChanged
 } from 'firebase/auth';
-import { 
-  getFirestore, collection, doc, setDoc, getDoc, 
-  onSnapshot, addDoc, updateDoc, deleteDoc 
+import {
+getFirestore, collection, doc, setDoc, getDoc,
+onSnapshot, addDoc, updateDoc, deleteDoc
 } from 'firebase/firestore';
-import { 
-  getStorage, ref, uploadBytesResumable, getDownloadURL 
+import {
+getStorage, ref, uploadBytesResumable, getDownloadURL
 } from 'firebase/storage';
 
 // ==========================================
 // ⚠️ FIREBASE CONFIGURATION (FORCED TO YOUR DB)
 // ==========================================
 const firebaseConfig = {
-  apiKey: "AIzaSyD04OYHpuCO6Z0ORy8NHMObQE5Bt-pZRnA",
-  authDomain: "meri-pasand-2a498.firebaseapp.com",
-  projectId: "meri-pasand-2a498",
-  storageBucket: "meri-pasand-2a498.firebasestorage.app",
-  messagingSenderId: "351274251886",
-  appId: "1:351274251886:web:c352f75848ff8a5141587f"
+apiKey: "AIzaSyD04OYHpuCO6Z0ORy8NHMObQE5Bt-pZRnA",
+authDomain: "meri-pasand-2a498.firebaseapp.com",
+projectId: "meri-pasand-2a498",
+storageBucket: "meri-pasand-2a498.firebasestorage.app",
+messagingSenderId: "351274251886",
+appId: "1:351274251886:web:c352f75848ff8a5141587f"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -36,403 +36,510 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 let storage;
 try {
-  storage = getStorage(app);
+storage = getStorage(app);
 } catch(e) { console.warn("Firebase storage not available", e); }
 
 // ==========================================
 // ⚠️ SETTINGS & AUTHOR INFO
 // ==========================================
-const apiKey = "AIzaSyBs6FLaXrpHqF7QsY1ocsbP8hru90NR4_4"; 
+const apiKey = "AIzaSyBs6FLaXrpHqF7QsY1ocsbP8hru90NR4_4";
 const getModelName = () => "gemini-2.5-flash-preview-09-2025";
-const AUTHOR_NAME = "Sandeep Dhingra"; 
+const AUTHOR_NAME = "Sandeep Dhingra";
 
 // --- AI Helpers ---
 const transliterateText = async (text, target) => {
-  if (!text.trim()) return '';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${getModelName()}:generateContent?key=${apiKey}`;
-  const prompt = target === 'roman'
-    ? `Transliterate the following Hindi text into Roman (Hinglish) script. Return ONLY the text:\n${text}`
-    : `Transliterate the following Roman (Hinglish) text into Hindi (Devanagari). Return ONLY the text:\n${text}`;
-  try {
-    const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
-    const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
-  } catch (e) { return ''; }
+if (!text.trim()) return '';
+const url = `https://generativelanguage.googleapis.com/v1beta/models/${getModelName()}:generateContent?key=${apiKey}`;
+const prompt = target === 'roman'
+? `Transliterate the following Hindi text into Roman (Hinglish) script. Return ONLY the text:\n${text}`
+: `Transliterate the following Roman (Hinglish) text into Hindi (Devanagari). Return ONLY the text:\n${text}`;
+try {
+const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body:
+JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+const data = await response.json();
+return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+} catch (e) { return ''; }
 };
 
 const extractUrduVocabulary = async (text) => {
-  if (!text.trim()) return '';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${getModelName()}:generateContent?key=${apiKey}`;
-  const prompt = `Extract difficult Urdu words. Format: Word (Devanagari) - Hindi Meaning - English Meaning. Poem:\n${text}`;
-  try {
-    const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
-    const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
-  } catch (e) { return ''; }
+if (!text.trim()) return '';
+const url = `https://generativelanguage.googleapis.com/v1beta/models/${getModelName()}:generateContent?key=${apiKey}`;
+const prompt = `Extract difficult Urdu words. Format: Word (Devanagari) - Hindi Meaning - English Meaning.
+Poem:\n${text}`;
+try {
+const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body:
+JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+const data = await response.json();
+return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+} catch (e) { return ''; }
 };
 
 const extractPoemEssence = async (text) => {
-  if (!text.trim()) return '';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${getModelName()}:generateContent?key=${apiKey}`;
-  const prompt = `Provide essence of this poem in 2 paragraphs. DO NOT mention the poet's name. Text:\n${text}`;
-  try {
-    const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
-    const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
-  } catch (e) { return ''; }
+if (!text.trim()) return '';
+const url = `https://generativelanguage.googleapis.com/v1beta/models/${getModelName()}:generateContent?key=${apiKey}`;
+const prompt = `Provide essence of this poem in 2 paragraphs. DO NOT mention the poet's name. Text:\n${text}`;
+try {
+const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body:
+JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+const data = await response.json();
+return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+} catch (e) { return ''; }
 };
 
 const classifyPoem = async (text) => {
-  if (!text.trim()) return '';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${getModelName()}:generateContent?key=${apiKey}`;
-  const prompt = `Classify poetic form (Ghazal, Nazm, Sher, Kavita, Doha, Rubai, Geet). Return ONLY the word. Text:\n${text}`;
-  try {
-    const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
-    const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
-  } catch (e) { return ''; }
+if (!text.trim()) return '';
+const url = `https://generativelanguage.googleapis.com/v1beta/models/${getModelName()}:generateContent?key=${apiKey}`;
+const prompt = `Classify poetic form (Ghazal, Nazm, Sher, Kavita, Doha, Rubai, Geet). Return ONLY the word.
+Text:\n${text}`;
+try {
+const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body:
+JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+const data = await response.json();
+return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+} catch (e) { return ''; }
 };
 
 const transcribeAudio = async (base64Data, mimeType) => {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${getModelName()}:generateContent?key=${apiKey}`;
-  const base64Clean = base64Data.split(',')[1];
-  const prompt = "Transcribe this Hindi audio into poetic Hindi (Devanagari). Return only the text.";
-  try {
-    const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType, data: base64Clean } }] }] }) });
-    const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
-  } catch (e) { return ''; }
+const url = `https://generativelanguage.googleapis.com/v1beta/models/${getModelName()}:generateContent?key=${apiKey}`;
+const base64Clean = base64Data.split(',')[1];
+const prompt = "Transcribe this Hindi audio into poetic Hindi (Devanagari). Return only the text.";
+try {
+const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body:
+JSON.stringify({ contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType, data: base64Clean } }] }] }) });
+const data = await response.json();
+return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+} catch (e) { return ''; }
 };
 
 const getYouTubeEmbedUrl = (url) => {
-  if (!url) return '';
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|\/shorts\/)([^#&?]*).*/;
-  const match = url.match(regExp);
-  return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : url;
+if (!url) return '';
+const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|\/shorts\/)([^#&?]*).*/;
+const match = url.match(regExp);
+return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : url;
 };
 
 const MediaRenderer = ({ url }) => {
-  if (!url) return null;
-  const ytUrl = getYouTubeEmbedUrl(url);
-  if (ytUrl !== url) return <iframe src={ytUrl} className="w-full aspect-video rounded-[1.5rem] border-0 shadow-lg" allowFullScreen></iframe>;
-  const isAudio = url.match(/\.(mp3|wav|m4a|aac|ogg|webm)(\?.*)?$/i) || url.startsWith('data:audio');
-  if (isAudio) return <audio controls className="w-full shadow-inner rounded-full outline-none" src={url} />;
-  return <video controls className="w-full aspect-video rounded-2xl bg-black" src={url} />;
+if (!url) return null;
+const ytUrl = getYouTubeEmbedUrl(url);
+if (ytUrl !== url) return <iframe src={ytUrl} className="w-full aspect-video rounded-[1.5rem] border-0 shadow-lg"
+    allowFullScreen></iframe>;
+const isAudio = url.match(/\.(mp3|wav|m4a|aac|ogg|webm)(\?.*)?$/i) || url.startsWith('data:audio');
+if (isAudio) return <audio controls className="w-full shadow-inner rounded-full outline-none" src={url} />;
+return <video controls className="w-full aspect-video rounded-2xl bg-black" src={url} />;
 };
 
 export default function App() {
-  const [user, setUser] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [view, setView] = useState('home');
-  const [poems, setPoems] = useState([]);
-  const [selectedPoem, setSelectedPoem] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [showAdminLogin, setShowAdminLogin] = useState(false);
-  const [adminPassword, setAdminPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
-  const [sharePoem, setSharePoem] = useState(null);
+const [user, setUser] = useState(null);
+const [isAdmin, setIsAdmin] = useState(false);
+const [view, setView] = useState('home');
+const [poems, setPoems] = useState([]);
+const [selectedPoem, setSelectedPoem] = useState(null);
+const [loading, setLoading] = useState(true);
+const [showAdminLogin, setShowAdminLogin] = useState(false);
+const [adminPassword, setAdminPassword] = useState('');
+const [loginError, setLoginError] = useState('');
+const [sharePoem, setSharePoem] = useState(null);
 
-  useEffect(() => {
-    const initAuth = async () => {
-      try {
-        await signInAnonymously(auth);
-      } catch (err) {
-        console.error("Auth failed:", err);
-      }
-    };
-    initAuth();
-    return onAuthStateChanged(auth, (u) => { setUser(u); setLoading(false); });
-  }, []);
+useEffect(() => {
+const initAuth = async () => {
+try {
+await signInAnonymously(auth);
+} catch (err) {
+console.error("Auth failed:", err);
+}
+};
+initAuth();
+return onAuthStateChanged(auth, (u) => { setUser(u); setLoading(false); });
+}, []);
 
-  useEffect(() => {
-    if (!user) return;
-    const poemsRef = collection(db, 'poems');
-    return onSnapshot(poemsRef, (snap) => {
-      const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setPoems(data.sort((a, b) => (a.rank || 0) - (b.rank || 0)));
-    }, (err) => console.error("Firestore error:", err));
-  }, [user]);
+useEffect(() => {
+if (!user) return;
+const poemsRef = collection(db, 'poems');
+return onSnapshot(poemsRef, (snap) => {
+const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+setPoems(data.sort((a, b) => (a.rank || 0) - (b.rank || 0)));
+}, (err) => console.error("Firestore error:", err));
+}, [user]);
 
-  // Deep Linking
-  useEffect(() => {
-    if (poems.length > 0 && view === 'home') {
-      const params = new URLSearchParams(window.location.search);
-      const pid = params.get('poem');
-      if (pid) {
-        const p = poems.find(x => x.id === pid);
-        if (p) { setSelectedPoem(p); setView('detail'); }
-      }
-    }
-  }, [poems]);
+// Deep Linking
+useEffect(() => {
+if (poems.length > 0 && view === 'home') {
+const params = new URLSearchParams(window.location.search);
+const pid = params.get('poem');
+if (pid) {
+const p = poems.find(x => x.id === pid);
+if (p) { setSelectedPoem(p); setView('detail'); }
+}
+}
+}, [poems]);
 
-  const goHome = () => { setView('home'); setSelectedPoem(null); window.history.pushState({}, '', window.location.pathname); };
-  const goToDetail = (p) => { setSelectedPoem(p); setView('detail'); window.history.pushState({}, '', `?poem=${p.id}`); };
+const goHome = () => { setView('home'); setSelectedPoem(null); window.history.pushState({}, '',
+window.location.pathname); };
+const goToDetail = (p) => { setSelectedPoem(p); setView('detail'); window.history.pushState({}, '', `?poem=${p.id}`); };
 
-  const handleAdminLogin = (e) => {
-    e.preventDefault();
-    if (adminPassword === 'kavi123') { setIsAdmin(true); setShowAdminLogin(false); setAdminPassword(''); setView('admin'); }
-    else { setLoginError('Incorrect password'); }
-  };
+const handleAdminLogin = (e) => {
+e.preventDefault();
+if (adminPassword === 'kavi123') { setIsAdmin(true); setShowAdminLogin(false); setAdminPassword(''); setView('admin'); }
+else { setLoginError('Incorrect password'); }
+};
 
-  const Header = () => (
-    <header className="bg-stone-900 text-stone-100 sticky top-0 z-20 p-4 shadow-lg">
-      <div className="max-w-7xl mx-auto flex justify-between items-center">
+const Header = () => (
+<header className="bg-stone-900 text-stone-100 sticky top-0 z-20 p-4 shadow-lg">
+    <div className="max-w-7xl mx-auto flex justify-between items-center">
         <div className="flex items-center gap-3 cursor-pointer" onClick={goHome}>
-          <div className="bg-amber-500 p-2 rounded-xl text-stone-900"><Headphones className="w-6 h-6" /></div>
-          <h1 className="text-xl font-serif font-bold hidden sm:flex items-center gap-2">
-            <span>Meri Pasand</span><span className="text-stone-500">|</span><span className="text-amber-500">मेरी पसंद</span>
-          </h1>
+            <div className="bg-amber-500 p-2 rounded-xl text-stone-900">
+                <Headphones className="w-6 h-6" />
+            </div>
+            <h1 className="text-xl font-serif font-bold hidden sm:flex items-center gap-2">
+                <span>Meri Pasand</span><span className="text-stone-500">|</span><span className="text-amber-500">मेरी
+                    पसंद</span>
+            </h1>
         </div>
         {isAdmin ? (
-          <button onClick={() => setView(view === 'admin' ? 'home' : 'admin')} className="bg-stone-800 px-5 py-2 rounded-full text-xs font-bold uppercase tracking-widest flex items-center gap-2 hover:bg-stone-700 transition">
-            {view === 'admin' ? <List className="w-4 h-4" /> : <Settings className="w-4 h-4" />}
+        <button onClick={()=> setView(view === 'admin' ? 'home' : 'admin')} className="bg-stone-800 px-5 py-2
+            rounded-full text-xs font-bold uppercase tracking-widest flex items-center gap-2 hover:bg-stone-700
+            transition">
+            {view === 'admin' ?
+            <List className="w-4 h-4" /> :
+            <Settings className="w-4 h-4" />}
             {view === 'admin' ? 'Library' : 'Dashboard'}
-          </button>
+        </button>
         ) : (
-          <button onClick={() => setShowAdminLogin(true)} className="text-stone-400 hover:text-amber-500 transition text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+        <button onClick={()=> setShowAdminLogin(true)} className="text-stone-400 hover:text-amber-500 transition text-xs
+            font-bold uppercase tracking-widest flex items-center gap-2">
             <LogIn className="w-4 h-4" /> Author
-          </button>
+        </button>
         )}
-      </div>
-    </header>
-  );
+    </div>
+</header>
+);
 
-  const ShareModal = () => {
-    if (!sharePoem) return null;
-    const url = `${window.location.origin}${window.location.pathname}?poem=${sharePoem.id}`;
-    const title = sharePoem.titleHindi || sharePoem.title;
-    const copyToClipboard = (text) => {
-      if (navigator.clipboard && window.isSecureContext) {
-          navigator.clipboard.writeText(text).then(() => alert('Link copied to clipboard!'));
-      } else {
-          const textArea = document.createElement("textarea");
-          textArea.value = text;
-          document.body.appendChild(textArea);
-          textArea.select();
-          try { document.execCommand('copy'); alert('Link copied!'); } catch (err) {}
-          document.body.removeChild(textArea);
-      }
-    };
+const ShareModal = () => {
+if (!sharePoem) return null;
+const url = `${window.location.origin}${window.location.pathname}?poem=${sharePoem.id}`;
+const title = sharePoem.titleHindi || sharePoem.title;
+const copyToClipboard = (text) => {
+if (navigator.clipboard && window.isSecureContext) {
+navigator.clipboard.writeText(text).then(() => alert('Link copied to clipboard!'));
+} else {
+const textArea = document.createElement("textarea");
+textArea.value = text;
+document.body.appendChild(textArea);
+textArea.select();
+try { document.execCommand('copy'); alert('Link copied!'); } catch (err) {}
+document.body.removeChild(textArea);
+}
+};
 
-    return (
-      <div className="fixed inset-0 bg-stone-900/80 backdrop-blur-sm flex items-center justify-center p-6 z-50 animate-in fade-in">
-        <div className="bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-sm relative">
-          <button onClick={() => setSharePoem(null)} className="absolute top-4 right-4 p-2 text-stone-400 hover:bg-stone-100 rounded-full transition"><X className="w-5 h-5"/></button>
-          <h3 className="text-2xl font-black text-stone-800 mb-6">Share Poem</h3>
-          <div className="flex flex-col gap-3">
-            <button onClick={() => copyToClipboard(url)} className="flex items-center gap-3 bg-stone-100 p-4 rounded-xl font-bold text-stone-700 hover:bg-stone-200 transition"><Copy className="w-5 h-5 text-stone-500" /> Copy Direct Link</button>
-            <a href={`https://wa.me/?text=${encodeURIComponent(`Listen to "${title}" recited by ${AUTHOR_NAME}:\n\n${url}`)}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 bg-[#e8fbf0] p-4 rounded-xl font-bold text-[#075e54] hover:bg-[#dcf8e8] transition"><MessageSquare className="w-5 h-5 text-[#25d366]" /> WhatsApp</a>
-            <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 bg-blue-50 p-4 rounded-xl font-bold text-blue-700 hover:bg-blue-100 transition"><Facebook className="w-5 h-5 text-blue-600" /> Facebook</a>
-            <button onClick={() => { copyToClipboard(url); alert("Instagram doesn't support direct links here. The link is copied, paste it in your story or bio!"); }} className="flex items-center gap-3 bg-pink-50 p-4 rounded-xl font-bold text-pink-700 hover:bg-pink-100 transition text-left"><Instagram className="w-5 h-5 text-pink-600" /> Instagram</button>
-          </div>
+return (
+<div
+    className="fixed inset-0 bg-stone-900/80 backdrop-blur-sm flex items-center justify-center p-6 z-50 animate-in fade-in">
+    <div className="bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-sm relative">
+        <button onClick={()=> setSharePoem(null)} className="absolute top-4 right-4 p-2 text-stone-400
+            hover:bg-stone-100 rounded-full transition">
+            <X className="w-5 h-5" />
+        </button>
+        <h3 className="text-2xl font-black text-stone-800 mb-6">Share Poem</h3>
+        <div className="flex flex-col gap-3">
+            <button onClick={()=> copyToClipboard(url)} className="flex items-center gap-3 bg-stone-100 p-4 rounded-xl
+                font-bold text-stone-700 hover:bg-stone-200 transition">
+                <Copy className="w-5 h-5 text-stone-500" /> Copy Direct Link
+            </button>
+            <a href={`https://wa.me/?text=${encodeURIComponent(`Listen to "${title}" recited by
+                ${AUTHOR_NAME}:\n\n${url}`)}`} target="_blank" rel="noreferrer"
+                className="flex items-center gap-3 bg-[#e8fbf0] p-4 rounded-xl font-bold text-[#075e54] hover:bg-[#dcf8e8] transition">
+                <MessageSquare className="w-5 h-5 text-[#25d366]" /> WhatsApp
+            </a>
+            <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`} target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-3 bg-blue-50 p-4 rounded-xl font-bold text-blue-700 hover:bg-blue-100 transition">
+                <Facebook className="w-5 h-5 text-blue-600" /> Facebook
+            </a>
+            <button onClick={()=> { copyToClipboard(url); alert("Instagram doesn't support direct links here. The link
+                is copied, paste it in your story or bio!"); }} className="flex items-center gap-3 bg-pink-50 p-4
+                rounded-xl font-bold text-pink-700 hover:bg-pink-100 transition text-left">
+                <Instagram className="w-5 h-5 text-pink-600" /> Instagram
+            </button>
         </div>
-      </div>
-    );
-  };
+    </div>
+</div>
+);
+};
 
-  const HomeView = () => {
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedFilter, setSelectedFilter] = useState('All');
+const HomeView = () => {
+const [searchQuery, setSearchQuery] = useState('');
+const [selectedFilter, setSelectedFilter] = useState('All');
 
-    const uniquePoets = useMemo(() => {
-      const poetSet = new Set();
-      poems.forEach(p => { poetSet.add(p.poet || p.poetHindi || 'Unknown'); });
-      return ['All', ...Array.from(poetSet).sort()];
-    }, [poems]);
+const uniquePoets = useMemo(() => {
+const poetSet = new Set();
+poems.forEach(p => { poetSet.add(p.poet || p.poetHindi || 'Unknown'); });
+return ['All', ...Array.from(poetSet).sort()];
+}, [poems]);
 
-    const filteredPoems = useMemo(() => {
-      return poems.filter(p => {
-        const poetName = p.poet || p.poetHindi || 'Unknown';
-        const matchesPoet = selectedFilter === 'All' || poetName === selectedFilter;
-        const q = searchQuery.toLowerCase();
-        const matchesSearch = (p.title || '').toLowerCase().includes(q) || (p.titleHindi || '').toLowerCase().includes(q) || (p.poet || '').toLowerCase().includes(q) || (p.poetHindi || '').toLowerCase().includes(q) || (p.hindiText || '').toLowerCase().includes(q) || (p.romanText || '').toLowerCase().includes(q);
-        return matchesPoet && matchesSearch;
-      });
-    }, [poems, searchQuery, selectedFilter]);
+const filteredPoems = useMemo(() => {
+return poems.filter(p => {
+const poetName = p.poet || p.poetHindi || 'Unknown';
+const matchesPoet = selectedFilter === 'All' || poetName === selectedFilter;
+const q = searchQuery.toLowerCase();
+const matchesSearch = (p.title || '').toLowerCase().includes(q) || (p.titleHindi || '').toLowerCase().includes(q) ||
+(p.poet || '').toLowerCase().includes(q) || (p.poetHindi || '').toLowerCase().includes(q) || (p.hindiText ||
+'').toLowerCase().includes(q) || (p.romanText || '').toLowerCase().includes(q);
+return matchesPoet && matchesSearch;
+});
+}, [poems, searchQuery, selectedFilter]);
 
-    return (
-      <div className="max-w-7xl mx-auto p-4 md:p-8">
-        <div className="text-center mb-10 mt-6 md:mt-12">
-           <h2 className="text-5xl md:text-7xl font-serif font-black text-stone-800 leading-tight">मेरी पसंद <span className="text-stone-300">|</span> <span className="text-amber-600">मेरी आवाज़ में</span></h2>
-           <div className="inline-block mt-8 px-8 py-3 bg-stone-900 rounded-full shadow-2xl transform -rotate-1 hover:rotate-0 transition cursor-default">
-              <p className="text-lg font-black text-amber-400 uppercase tracking-[0.2em] flex items-center gap-3"><Mic className="w-6 h-6 animate-pulse" /> Recitations by {AUTHOR_NAME}</p>
-           </div>
+return (
+<div className="max-w-7xl mx-auto p-4 md:p-8">
+    <div className="text-center mb-10 mt-6 md:mt-12">
+        <h2 className="text-5xl md:text-7xl font-serif font-black text-stone-800 leading-tight">मेरी पसंद <span
+                className="text-stone-300">|</span> <span className="text-amber-600">मेरी आवाज़ में</span></h2>
+        <div
+            className="inline-block mt-8 px-8 py-3 bg-stone-900 rounded-full shadow-2xl transform -rotate-1 hover:rotate-0 transition cursor-default">
+            <p className="text-lg font-black text-amber-400 uppercase tracking-[0.2em] flex items-center gap-3">
+                <Mic className="w-6 h-6 animate-pulse" /> Recitations by {AUTHOR_NAME}
+            </p>
         </div>
-        
-        <div className="bg-white p-4 md:p-6 rounded-[2rem] shadow-lg border border-stone-200 mb-10 sticky top-[76px] z-10">
-           <div className="flex items-center relative">
-              <Search className="absolute left-4 w-5 h-5 text-stone-400" />
-              <input type="text" placeholder="Search poems, poets, or words..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-stone-50 border border-stone-200 py-4 pl-12 pr-12 rounded-full outline-none focus:ring-2 focus:ring-amber-500 font-medium" />
-              {searchQuery && <button onClick={() => setSearchQuery('')} className="absolute right-4 text-stone-400 hover:text-stone-600"><X className="w-5 h-5" /></button>}
-           </div>
+    </div>
+
+    <div className="bg-white p-4 md:p-6 rounded-[2rem] shadow-lg border border-stone-200 mb-10 sticky top-[76px] z-10">
+        <div className="flex items-center relative">
+            <Search className="absolute left-4 w-5 h-5 text-stone-400" />
+            <input type="text" placeholder="Search poems, poets, or words..." value={searchQuery} onChange={(e)=>
+            setSearchQuery(e.target.value)} className="w-full bg-stone-50 border border-stone-200 py-4 pl-12 pr-12
+            rounded-full outline-none focus:ring-2 focus:ring-amber-500 font-medium" />
+            {searchQuery && <button onClick={()=> setSearchQuery('')} className="absolute right-4 text-stone-400
+                hover:text-stone-600">
+                <X className="w-5 h-5" />
+            </button>}
         </div>
+    </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
-          {filteredPoems.map(p => {
-             const isAudioOnly = p.mediaUrl && (p.mediaUrl.match(/\.(mp3|wav|m4a|aac|ogg|webm)(\?.*)?$/i) || p.mediaUrl.startsWith('data:audio'));
-             return (
-              <div key={p.id} onClick={() => goToDetail(p)} className="bg-white p-8 rounded-[2.5rem] border border-stone-100 shadow-sm hover:shadow-2xl hover:border-amber-300 hover:-translate-y-2 transition-all duration-300 cursor-pointer group flex flex-col h-full relative overflow-hidden">
-                 <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50 rounded-bl-[100px] -mr-10 -mt-10 opacity-50 group-hover:bg-amber-100 transition-colors"></div>
-                 <div className="relative z-10 flex-grow">
-                    <h3 className="text-2xl font-serif font-bold text-stone-800 mb-1 group-hover:text-amber-800 transition">{p.titleHindi || p.title}</h3>
-                    <div className="flex flex-wrap gap-2 mt-3 mb-6">
-                      <span className="px-3 py-1 bg-stone-50 border border-stone-100 rounded-lg text-stone-600 font-bold text-[10px] uppercase tracking-widest">By {p.poetHindi || p.poet}</span>
-                      {p.classification && <span className="px-3 py-1 bg-amber-50 border border-amber-100 rounded-lg text-amber-700 font-bold text-[10px] uppercase tracking-widest">{p.classification}</span>}
-                    </div>
-                    <p className="text-stone-500 line-clamp-3 italic font-serif leading-relaxed mb-6">{p.hindiText}</p>
-                 </div>
-                 <div className="relative z-10 flex items-center justify-between pt-6 border-t border-stone-100">
-                    <button onClick={(e) => {e.stopPropagation(); setSharePoem(p);}} className="p-3 bg-stone-50 border border-stone-100 rounded-full text-stone-400 hover:text-amber-600 hover:border-amber-200 hover:bg-amber-50 transition shadow-sm"><Share2 className="w-4 h-4"/></button>
-                    {p.mediaUrl && <div className="bg-amber-500 text-white px-5 py-2 rounded-full font-black text-[10px] uppercase tracking-widest flex items-center gap-2 shadow-lg group-hover:bg-amber-600 group-hover:-translate-y-1 transition transform">Listen Now <Play className="w-3 h-3 fill-white"/></div>}
-                 </div>
-              </div>
-            )})}
-        </div>
-      </div>
-    );
-  };
-
-  const PoemDetailView = () => {
-    const [comments, setComments] = useState([]);
-    const [newComment, setNewComment] = useState('');
-    const [newRating, setNewRating] = useState(0);
-    const [hoverRating, setHoverRating] = useState(0);
-    const [submittingComment, setSubmittingComment] = useState(false);
-
-    if (!selectedPoem) return null;
-    const currentPoem = poems.find(p => p.id === selectedPoem?.id) || selectedPoem;
-    const avgRating = currentPoem?.ratingCount ? (currentPoem.ratingSum / currentPoem.ratingCount).toFixed(1) : 0;
-
-    useEffect(() => {
-      if (!user || !selectedPoem) return;
-      const commentsRef = collection(db, `poems/${selectedPoem.id}/comments`);
-      const unsubscribe = onSnapshot(commentsRef, (snap) => {
-        const loaded = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setComments(loaded.sort((a, b) => b.createdAt - a.createdAt));
-      });
-      return () => unsubscribe();
-    }, [user, selectedPoem]);
-
-    const handleAddComment = async (e) => {
-      e.preventDefault();
-      if (!user || (newRating === 0 && !newComment.trim())) return;
-      
-      setSubmittingComment(true);
-      try {
-        await addDoc(collection(db, `poems/${selectedPoem.id}/comments`), {
-          userId: user.uid,
-          text: newComment.trim(),
-          rating: newRating,
-          createdAt: Date.now()
-        });
-
-        if (newRating > 0) {
-            const poemRef = doc(db, 'poems', selectedPoem.id);
-            const currentCount = currentPoem.ratingCount || 0;
-            const currentSum = currentPoem.ratingSum || 0;
-            await updateDoc(poemRef, {
-                ratingCount: currentCount + 1,
-                ratingSum: currentSum + newRating
-            });
-        }
-        setNewComment('');
-        setNewRating(0);
-      } catch (error) {
-        console.error("Error adding comment/rating:", error);
-      } finally {
-        setSubmittingComment(false);
-      }
-    };
-
-    return (
-      <div className="max-w-5xl mx-auto p-4 md:p-6 animate-in slide-in-from-bottom-8 duration-700">
-        <div className="flex justify-between items-center mb-8">
-          <button onClick={goHome} className="flex items-center text-stone-400 hover:text-amber-600 font-bold uppercase tracking-widest text-[10px] transition bg-white px-4 py-2 rounded-full border shadow-sm"><ChevronLeft className="w-4 h-4 mr-1" /> Back to Library</button>
-          <button onClick={() => setSharePoem(currentPoem)} className="flex items-center gap-2 bg-white border px-5 py-2 rounded-full text-stone-600 font-bold text-[10px] uppercase tracking-widest shadow-sm hover:shadow-md hover:text-amber-600 hover:border-amber-300 transition"><Share2 className="w-4 h-4"/> Share</button>
-        </div>
-        <div className="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-stone-100 mb-12">
-           <div className="bg-stone-50 p-8 md:p-20 text-center relative border-b border-stone-100">
-              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-amber-400 via-amber-600 to-amber-400"></div>
-              
-              {avgRating > 0 && (
-                  <div className="flex items-center justify-center gap-2 bg-white text-stone-800 px-4 py-1.5 rounded-full text-sm font-bold w-max mx-auto mb-6 shadow-sm border border-stone-200">
-                      <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
-                      {avgRating} ({currentPoem.ratingCount} Reviews)
-                  </div>
-              )}
-
-              <h2 className="text-5xl md:text-7xl font-serif font-black text-stone-800 mb-6 leading-tight">{currentPoem.titleHindi || currentPoem.title}</h2>
-              
-              {currentPoem.classification && (
-                 <div className="inline-block mb-8 px-6 py-2 bg-amber-100 rounded-full border border-amber-200">
-                    <p className="text-amber-800 font-black text-xs uppercase tracking-[0.2em]">{currentPoem.classification}</p>
-                 </div>
-              )}
-              
-              <p className="text-xl text-stone-500 font-serif italic mb-10">— Poet: {currentPoem.poetHindi || currentPoem.poet} —</p>
-              
-              {/* Cinematic Audio Player */}
-              {currentPoem.mediaUrl && (
-                <div className="max-w-4xl mx-auto bg-stone-900 p-8 md:p-10 rounded-[2rem] shadow-2xl border border-stone-800 relative overflow-hidden text-center transform hover:scale-[1.02] transition duration-500">
-                   <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500 rounded-bl-full opacity-10 blur-3xl"></div>
-                   <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-600 rounded-tr-full opacity-10 blur-3xl"></div>
-                   
-                   <div className="relative z-10 flex flex-col md:flex-row items-center justify-center gap-6 mb-8">
-                      <div className="w-16 h-16 bg-amber-500 rounded-full flex items-center justify-center shadow-lg shadow-amber-500/30 animate-pulse shrink-0"><Mic className="w-8 h-8 text-white" /></div>
-                      <div className="text-center md:text-left"><p className="text-amber-500 font-black text-[10px] tracking-[0.2em] uppercase mb-1">Recited By</p><p className="text-3xl md:text-4xl font-black text-white tracking-wide">{AUTHOR_NAME}</p></div>
-                   </div>
-                   <div className="relative z-10 bg-white/10 p-2 rounded-full backdrop-blur-md border border-white/5">
-                       <MediaRenderer url={currentPoem.mediaUrl} />
-                   </div>
+    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
+        {filteredPoems.map(p => {
+        const isAudioOnly = p.mediaUrl && (p.mediaUrl.match(/\.(mp3|wav|m4a|aac|ogg|webm)(\?.*)?$/i) ||
+        p.mediaUrl.startsWith('data:audio'));
+        return (
+        <div key={p.id} onClick={()=> goToDetail(p)} className="bg-white p-8 rounded-[2.5rem] border border-stone-100
+            shadow-sm hover:shadow-2xl hover:border-amber-300 hover:-translate-y-2 transition-all duration-300
+            cursor-pointer group flex flex-col h-full relative overflow-hidden">
+            <div
+                className="absolute top-0 right-0 w-32 h-32 bg-amber-50 rounded-bl-[100px] -mr-10 -mt-10 opacity-50 group-hover:bg-amber-100 transition-colors">
+            </div>
+            <div className="relative z-10 flex-grow">
+                <h3 className="text-2xl font-serif font-bold text-stone-800 mb-1 group-hover:text-amber-800 transition">
+                    {p.titleHindi || p.title}</h3>
+                <div className="flex flex-wrap gap-2 mt-3 mb-6">
+                    <span
+                        className="px-3 py-1 bg-stone-50 border border-stone-100 rounded-lg text-stone-600 font-bold text-[10px] uppercase tracking-widest">By
+                        {p.poetHindi || p.poet}</span>
+                    {p.classification && <span
+                        className="px-3 py-1 bg-amber-50 border border-amber-100 rounded-lg text-amber-700 font-bold text-[10px] uppercase tracking-widest">{p.classification}</span>}
                 </div>
-              )}
-           </div>
-           <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-stone-100">
-              <div className="p-8 md:p-20"><h4 className="text-[10px] font-black uppercase text-amber-600 mb-10 tracking-[0.2em] border-b border-amber-100 w-max pb-2">Devanagari</h4><div className="font-serif text-2xl md:text-3xl leading-loose whitespace-pre-wrap text-stone-800">{currentPoem.hindiText}</div></div>
-              <div className="p-8 md:p-20 bg-stone-50/50"><h4 className="text-[10px] font-black uppercase text-stone-400 mb-10 tracking-[0.2em] border-b border-stone-200 w-max pb-2">Transliteration</h4><div className="font-serif text-2xl md:text-3xl italic text-stone-500 leading-loose whitespace-pre-wrap">{currentPoem.romanText}</div></div>
-           </div>
+                <p className="text-stone-500 line-clamp-3 italic font-serif leading-relaxed mb-6">{p.hindiText}</p>
+            </div>
+            <div className="relative z-10 flex items-center justify-between pt-6 border-t border-stone-100">
+                <button onClick={(e)=> {e.stopPropagation(); setSharePoem(p);}} className="p-3 bg-stone-50 border
+                    border-stone-100 rounded-full text-stone-400 hover:text-amber-600 hover:border-amber-200
+                    hover:bg-amber-50 transition shadow-sm">
+                    <Share2 className="w-4 h-4" />
+                </button>
+                {p.mediaUrl && <div
+                    className="bg-amber-500 text-white px-5 py-2 rounded-full font-black text-[10px] uppercase tracking-widest flex items-center gap-2 shadow-lg group-hover:bg-amber-600 group-hover:-translate-y-1 transition transform">
+                    Listen Now
+                    <Play className="w-3 h-3 fill-white" />
+                </div>}
+            </div>
         </div>
+        )})}
+    </div>
+</div>
+);
+};
 
-        {currentPoem.essence && (
-          <div className="bg-white p-10 md:p-16 rounded-[2.5rem] border border-stone-200 shadow-xl mb-8 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-stone-50 rounded-bl-full -mr-4 -mt-4 opacity-50"></div>
-            <h4 className="font-black text-stone-800 text-2xl mb-8 flex items-center gap-4 relative z-10"><Info className="w-8 h-8 text-stone-300"/> Poem Essence</h4>
-            <div className="font-serif text-xl leading-loose text-stone-600 relative z-10">{currentPoem.essence}</div>
-          </div>
-        )}
-        {currentPoem.vocabulary && (
-          <div className="bg-amber-50 p-10 md:p-16 rounded-[2.5rem] border border-amber-200 shadow-xl mb-8 relative overflow-hidden">
-            <h4 className="font-black text-amber-900 text-2xl mb-8 flex items-center gap-4"><BookOpen className="w-8 h-8 text-amber-500"/> Glossary</h4>
-            <div className="font-serif text-xl italic leading-loose text-stone-700 whitespace-pre-wrap">{currentPoem.vocabulary}</div>
-          </div>
-        )}
+const PoemDetailView = () => {
+const [comments, setComments] = useState([]);
+const [newComment, setNewComment] = useState('');
+const [newRating, setNewRating] = useState(0);
+const [hoverRating, setHoverRating] = useState(0);
+const [submittingComment, setSubmittingComment] = useState(false);
 
-        <div className="max-w-4xl mx-auto bg-white rounded-[2.5rem] shadow-lg border border-stone-200 overflow-hidden">
-            <div className="p-10 md:p-12 border-b border-stone-100 bg-stone-50">
-               <h3 className="text-3xl font-black text-stone-800 mb-2 flex items-center gap-3"><MessageSquare className="w-8 h-8 text-amber-500" /> Reader Reflections</h3>
-               <p className="text-stone-500 font-medium">Leave a rating or share your thoughts about this composition.</p>
+if (!selectedPoem) return null;
+const currentPoem = poems.find(p => p.id === selectedPoem?.id) || selectedPoem;
+const avgRating = currentPoem?.ratingCount ? (currentPoem.ratingSum / currentPoem.ratingCount).toFixed(1) : 0;
+
+useEffect(() => {
+if (!user || !selectedPoem) return;
+const commentsRef = collection(db, `poems/${selectedPoem.id}/comments`);
+const unsubscribe = onSnapshot(commentsRef, (snap) => {
+const loaded = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+setComments(loaded.sort((a, b) => b.createdAt - a.createdAt));
+});
+return () => unsubscribe();
+}, [user, selectedPoem]);
+
+const handleAddComment = async (e) => {
+e.preventDefault();
+if (!user || (newRating === 0 && !newComment.trim())) return;
+
+setSubmittingComment(true);
+try {
+await addDoc(collection(db, `poems/${selectedPoem.id}/comments`), {
+userId: user.uid,
+text: newComment.trim(),
+rating: newRating,
+createdAt: Date.now()
+});
+
+if (newRating > 0) {
+const poemRef = doc(db, 'poems', selectedPoem.id);
+const currentCount = currentPoem.ratingCount || 0;
+const currentSum = currentPoem.ratingSum || 0;
+await updateDoc(poemRef, {
+ratingCount: currentCount + 1,
+ratingSum: currentSum + newRating
+});
+}
+setNewComment('');
+setNewRating(0);
+} catch (error) {
+console.error("Error adding comment/rating:", error);
+} finally {
+setSubmittingComment(false);
+}
+};
+
+return (
+<div className="max-w-5xl mx-auto p-4 md:p-6 animate-in slide-in-from-bottom-8 duration-700">
+    <div className="flex justify-between items-center mb-8">
+        <button onClick={goHome}
+            className="flex items-center text-stone-400 hover:text-amber-600 font-bold uppercase tracking-widest text-[10px] transition bg-white px-4 py-2 rounded-full border shadow-sm">
+            <ChevronLeft className="w-4 h-4 mr-1" /> Back to Library
+        </button>
+        <button onClick={()=> setSharePoem(currentPoem)} className="flex items-center gap-2 bg-white border px-5 py-2
+            rounded-full text-stone-600 font-bold text-[10px] uppercase tracking-widest shadow-sm hover:shadow-md
+            hover:text-amber-600 hover:border-amber-300 transition">
+            <Share2 className="w-4 h-4" /> Share
+        </button>
+    </div>
+    <div className="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-stone-100 mb-12">
+        <div className="bg-stone-50 p-8 md:p-20 text-center relative border-b border-stone-100">
+            <div
+                className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-amber-400 via-amber-600 to-amber-400">
             </div>
 
-            <div className="p-10 md:p-12">
-               <form onSubmit={handleAddComment} className="mb-12 bg-stone-50 rounded-2xl p-6 md:p-8 border border-stone-200">
-                  <div className="mb-6 flex flex-col md:flex-row md:items-center gap-4 border-b border-stone-200 pb-6">
-                     <span className="font-bold text-stone-600 uppercase tracking-widest text-xs">Your Rating</span>
-                     <div className="flex gap-1">
+            {avgRating > 0 && (
+            <div
+                className="flex items-center justify-center gap-2 bg-white text-stone-800 px-4 py-1.5 rounded-full text-sm font-bold w-max mx-auto mb-6 shadow-sm border border-stone-200">
+                <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
+                {avgRating} ({currentPoem.ratingCount} Reviews)
+            </div>
+            )}
+
+            <h2 className="text-5xl md:text-7xl font-serif font-black text-stone-800 mb-6 leading-tight">
+                {currentPoem.titleHindi || currentPoem.title}</h2>
+
+            {currentPoem.classification && (
+            <div className="inline-block mb-8 px-6 py-2 bg-amber-100 rounded-full border border-amber-200">
+                <p className="text-amber-800 font-black text-xs uppercase tracking-[0.2em]">{currentPoem.classification}
+                </p>
+            </div>
+            )}
+
+            <p className="text-xl text-stone-500 font-serif italic mb-10">— Poet: {currentPoem.poetHindi ||
+                currentPoem.poet} —</p>
+
+            {/* Cinematic Audio Player */}
+            {currentPoem.mediaUrl && (
+            <div
+                className="max-w-4xl mx-auto bg-stone-900 p-8 md:p-10 rounded-[2rem] shadow-2xl border border-stone-800 relative overflow-hidden text-center transform hover:scale-[1.02] transition duration-500">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500 rounded-bl-full opacity-10 blur-3xl">
+                </div>
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-600 rounded-tr-full opacity-10 blur-3xl">
+                </div>
+
+                <div className="relative z-10 flex flex-col md:flex-row items-center justify-center gap-6 mb-8">
+                    <div
+                        className="w-16 h-16 bg-amber-500 rounded-full flex items-center justify-center shadow-lg shadow-amber-500/30 animate-pulse shrink-0">
+                        <Mic className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="text-center md:text-left">
+                        <p className="text-amber-500 font-black text-[10px] tracking-[0.2em] uppercase mb-1">Recited By
+                        </p>
+                        <p className="text-3xl md:text-4xl font-black text-white tracking-wide">{AUTHOR_NAME}</p>
+                    </div>
+                </div>
+                <div className="relative z-10 bg-white/10 p-2 rounded-full backdrop-blur-md border border-white/5">
+                    <MediaRenderer url={currentPoem.mediaUrl} />
+                </div>
+            </div>
+            )}
+        </div>
+        <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-stone-100">
+            <div className="p-8 md:p-20">
+                <h4
+                    className="text-[10px] font-black uppercase text-amber-600 mb-10 tracking-[0.2em] border-b border-amber-100 w-max pb-2">
+                    Devanagari</h4>
+                <div className="font-serif text-2xl md:text-3xl leading-loose whitespace-pre-wrap text-stone-800">
+                    {currentPoem.hindiText}</div>
+            </div>
+            <div className="p-8 md:p-20 bg-stone-50/50">
+                <h4
+                    className="text-[10px] font-black uppercase text-stone-400 mb-10 tracking-[0.2em] border-b border-stone-200 w-max pb-2">
+                    Transliteration</h4>
+                <div
+                    className="font-serif text-2xl md:text-3xl italic text-stone-500 leading-loose whitespace-pre-wrap">
+                    {currentPoem.romanText}</div>
+            </div>
+        </div>
+    </div>
+
+    {currentPoem.essence && (
+    <div
+        className="bg-white p-10 md:p-16 rounded-[2.5rem] border border-stone-200 shadow-xl mb-8 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-stone-50 rounded-bl-full -mr-4 -mt-4 opacity-50"></div>
+        <h4 className="font-black text-stone-800 text-2xl mb-8 flex items-center gap-4 relative z-10">
+            <Info className="w-8 h-8 text-stone-300" /> Poem Essence
+        </h4>
+        <div className="font-serif text-xl leading-loose text-stone-600 relative z-10">{currentPoem.essence}</div>
+    </div>
+    )}
+    {currentPoem.vocabulary && (
+    <div
+        className="bg-amber-50 p-10 md:p-16 rounded-[2.5rem] border border-amber-200 shadow-xl mb-8 relative overflow-hidden">
+        <h4 className="font-black text-amber-900 text-2xl mb-8 flex items-center gap-4">
+            <BookOpen className="w-8 h-8 text-amber-500" /> Glossary
+        </h4>
+        <div className="font-serif text-xl italic leading-loose text-stone-700 whitespace-pre-wrap">
+            {currentPoem.vocabulary}</div>
+    </div>
+    )}
+
+    <div className="max-w-4xl mx-auto bg-white rounded-[2.5rem] shadow-lg border border-stone-200 overflow-hidden">
+        <div className="p-10 md:p-12 border-b border-stone-100 bg-stone-50">
+            <h3 className="text-3xl font-black text-stone-800 mb-2 flex items-center gap-3">
+                <MessageSquare className="w-8 h-8 text-amber-500" /> Reader Reflections
+            </h3>
+            <p className="text-stone-500 font-medium">Leave a rating or share your thoughts about this composition.</p>
+        </div>
+
+        <div className="p-10 md:p-12">
+            <form onSubmit={handleAddComment}
+                className="mb-12 bg-stone-50 rounded-2xl p-6 md:p-8 border border-stone-200">
+                <div className="mb-6 flex flex-col md:flex-row md:items-center gap-4 border-b border-stone-200 pb-6">
+                    <span className="font-bold text-stone-600 uppercase tracking-widest text-xs">Your Rating</span>
+                    <div className="flex gap-1">
                         {[1, 2, 3, 4, 5].map((star) => (
-                           <Star 
-                              key={star}
-                              className={`w-8 h-8 cursor-pointer transition-transform hover:scale-110 ${star <= (hoverRating || newRating) ? 'fill-amber-500 text-amber-500' : 'text-stone-300'}`}
-                              onMouseEnter={() => setHoverRating(star)}
-                              onMouseLeave={() => setHoverRating(0)}
-                              onClick={() => setNewRating(star)}
-                           />
-                        ))}
-                     </div>
-                  </div>
-                  
-                  <textarea
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
+                        <Star key={star} className={`w-8 h-8 cursor-pointer transition-transform hover:scale-110 ${star
+                            <=(hoverRating || newRating) ? 'fill-amber-500 text-amber-500' : 'text-stone-300' }`}
+                            onMouseEnter={()=> setHoverRating(star)}
+                            onMouseLeave={() => setHoverRating(0)}
+                            onClick={() => setNewRating(star)}
+                            />
+                            ))}
+                    </div>
+                </div>
+
+                <textarea value={newComment} onChange={(e)=> setNewComment(e.target.value)}
                     placeholder="Write your review or reflection here..."
                     className="w-full bg-white border border-stone-200 rounded-xl p-4 md:p-6 text-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition min-h-[120px] mb-4"
                   />
