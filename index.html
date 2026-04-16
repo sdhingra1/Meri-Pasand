@@ -1,34 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Meri Pasand | मेरी पसंद</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meri Pasand - Meri Awaaz Me | Sandeep Dhingra</title>
   
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
+  <!-- Babel for in-browser JSX compilation -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   
-  <script type="importmap">
-    {
-      "imports": {
-        "react": "https://esm.sh/react@18.2.0",
-        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-        "lucide-react": "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0",
-        "firebase/app": "https://esm.sh/firebase@10.8.1/app",
-        "firebase/auth": "https://esm.sh/firebase@10.8.1/auth",
-        "firebase/firestore": "https://esm.sh/firebase@10.8.1/firestore",
-        "firebase/storage": "https://esm.sh/firebase@10.8.1/storage"
-      }
-    }
-  </script>
+  <style>
+    /* Custom Scrollbar for better look */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #f5f5f4; }
+    ::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #a8a29e; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+  </style>
 </head>
-<body>
+<body class="bg-stone-50 text-stone-900 font-sans selection:bg-amber-200">
   <div id="root"></div>
 
   <script type="text/babel" data-type="module">
-    import React, { useState, useEffect, useRef, useMemo } from 'react';
-    import { createRoot } from 'react-dom/client';
+    import React, { useState, useEffect, useRef, useMemo } from 'https://esm.sh/react@18.2.0';
+    import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
     import { 
       BookOpen, Play, Video, MessageSquare, Settings, 
       Edit, Trash2, Plus, ChevronLeft, LogIn, LogOut, 
@@ -36,21 +32,22 @@
       Loader2, Wand2, CheckCircle, AlertCircle, Info, 
       ExternalLink, Link as LinkIcon, Search, Filter, Star,
       Share2, Copy, Facebook, Instagram
-    } from 'lucide-react';
-    import { initializeApp } from 'firebase/app';
+    } from 'https://esm.sh/lucide-react@0.263.1';
+    
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
     import { 
       getAuth, signInAnonymously, onAuthStateChanged 
-    } from 'firebase/auth';
+    } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
     import { 
       getFirestore, collection, doc, setDoc, getDoc, 
       onSnapshot, addDoc, updateDoc, deleteDoc 
-    } from 'firebase/firestore';
+    } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
     import { 
       getStorage, ref, uploadBytesResumable, getDownloadURL 
-    } from 'firebase/storage';
+    } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js';
 
     // ==========================================
-    // ⚠️ FIREBASE CONFIGURATION
+    // ⚠️ FIREBASE CONFIGURATION (FORCED TO YOUR DB)
     // ==========================================
     const firebaseConfig = {
       apiKey: "AIzaSyD04OYHpuCO6Z0ORy8NHMObQE5Bt-pZRnA",
