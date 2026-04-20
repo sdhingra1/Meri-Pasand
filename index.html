@@ -228,30 +228,59 @@
       const [selectedPoet, setSelectedPoet] = useState('All');
       const [selectedType, setSelectedType] = useState('All');
 
-      const uniquePoets = useMemo(() => {
-        const poetSet = new Set();
+      const { uniquePoets, poetLabelMap } = useMemo(() => {
+        const map = new Map();
+        const labelMap = new Map();
+        const getKey = (r, h) => (r || h || '').trim().toLowerCase();
+
         poems.forEach(p => { 
-          const label = formatLabel(p.poet, p.poetHindi);
-          if (label !== 'Unknown') poetSet.add(label); 
+          const key = getKey(p.poet, p.poetHindi);
+          if (!key) return;
+          const newLabel = formatLabel(p.poet, p.poetHindi);
+          const currentLabel = map.get(key);
+          // Prefer bilingual label, or longer label if both are monolingual
+          if (!currentLabel || (newLabel.includes('/') && !currentLabel.includes('/')) || (!currentLabel.includes('/') && newLabel.length > currentLabel.length)) {
+             map.set(key, newLabel);
+          }
         });
-        return ['All', ...Array.from(poetSet).sort()];
+
+        poems.forEach(p => {
+          const key = getKey(p.poet, p.poetHindi);
+          if (key) labelMap.set(p.id, map.get(key));
+        });
+
+        return { uniquePoets: ['All', ...Array.from(map.values()).sort()], poetLabelMap: labelMap };
       }, [poems]);
 
-      const uniqueTypes = useMemo(() => {
-        const typeSet = new Set();
+      const { uniqueTypes, typeLabelMap } = useMemo(() => {
+        const map = new Map();
+        const labelMap = new Map();
+        const getKey = (r, h) => (r || h || '').trim().toLowerCase();
+
         poems.forEach(p => { 
-          const label = formatLabel(p.classification, p.classificationHindi);
-          if (label !== 'Unknown') typeSet.add(label); 
+          const key = getKey(p.classification, p.classificationHindi);
+          if (!key) return;
+          const newLabel = formatLabel(p.classification, p.classificationHindi);
+          const currentLabel = map.get(key);
+          if (!currentLabel || (newLabel.includes('/') && !currentLabel.includes('/')) || (!currentLabel.includes('/') && newLabel.length > currentLabel.length)) {
+             map.set(key, newLabel);
+          }
         });
-        return ['All', ...Array.from(typeSet).sort()];
+
+        poems.forEach(p => {
+          const key = getKey(p.classification, p.classificationHindi);
+          if (key) labelMap.set(p.id, map.get(key));
+        });
+
+        return { uniqueTypes: ['All', ...Array.from(map.values()).sort()], typeLabelMap: labelMap };
       }, [poems]);
 
       const filteredPoems = useMemo(() => {
         return poems.filter(p => {
-          const poetLabel = formatLabel(p.poet, p.poetHindi);
+          const poetLabel = poetLabelMap.get(p.id) || 'Unknown';
           const matchesPoet = selectedPoet === 'All' || poetLabel === selectedPoet;
           
-          const typeLabel = formatLabel(p.classification, p.classificationHindi);
+          const typeLabel = typeLabelMap.get(p.id) || 'Unknown';
           const matchesType = selectedType === 'All' || typeLabel === selectedType;
           
           const q = searchQuery.toLowerCase();
@@ -267,7 +296,7 @@
 
           return matchesPoet && matchesType && matchesSearch;
         });
-      }, [poems, searchQuery, selectedPoet, selectedType]);
+      }, [poems, searchQuery, selectedPoet, selectedType, poetLabelMap, typeLabelMap]);
 
       return (
         <div className="max-w-7xl mx-auto p-4 md:p-8">
@@ -325,8 +354,8 @@
                    <div className="relative z-10 flex-grow mb-4">
                       <h3 className="text-2xl font-serif font-bold text-stone-800 mb-2 group-hover:text-amber-800 transition">{p.titleHindi || p.title}</h3>
                       <div className="flex flex-wrap gap-2 mt-2">
-                        <span className="px-3 py-1 bg-stone-50 border border-stone-100 rounded-lg text-stone-600 font-bold text-[10px] uppercase tracking-widest">By {formatLabel(p.poet, p.poetHindi)}</span>
-                        {(p.classification || p.classificationHindi) && <span className="px-3 py-1 bg-amber-50 border border-amber-100 rounded-lg text-amber-700 font-bold text-[10px] uppercase tracking-widest">{formatLabel(p.classification, p.classificationHindi)}</span>}
+                        <span className="px-3 py-1 bg-stone-50 border border-stone-100 rounded-lg text-stone-600 font-bold text-[10px] uppercase tracking-widest">By {poetLabelMap.get(p.id) || formatLabel(p.poet, p.poetHindi)}</span>
+                        {(p.classification || p.classificationHindi) && <span className="px-3 py-1 bg-amber-50 border border-amber-100 rounded-lg text-amber-700 font-bold text-[10px] uppercase tracking-widest">{typeLabelMap.get(p.id) || formatLabel(p.classification, p.classificationHindi)}</span>}
                       </div>
                    </div>
                    <div className="relative z-10 flex items-center justify-between pt-4 border-t border-stone-100">
@@ -719,6 +748,73 @@
               {formError && <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6 text-sm border border-red-200 font-bold flex items-center gap-2"><AlertCircle className="w-5 h-5"/> {formError}</div>}
 
               <form onSubmit={save} className="space-y-8">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                     <label className="text-[10px] font-black uppercase text-stone-400 block ml-1">Title (Roman) to Auto Hindi</label>
+                     <input value={formData.title || ''} onChange={e => { const val = e.target.value; setFormData({...formData, title: val}); handleDebouncedAuto('title', val); }} placeholder="Type Title (Roman)..." className="w-full border-b-2 p-3 outline-none focus:border-amber-500 transition" />
+                     <input value={formData.titleHindi || ''} onChange={e => setFormData({...formData, titleHindi: e.target.value})} placeholder="शीर्षक (Hindi)..." className="w-full border-b-2 p-3 outline-none bg-stone-50 font-serif text-lg rounded-t-lg" />
+                  </div>
+                  <div className="space-y-2">
+                     <label className="text-[10px] font-black uppercase text-stone-400 block ml-1">Poet (Roman) to Auto Hindi</label>
+                     <input value={formData.poet || ''} onChange={e => { const val = e.target.value; setFormData({...formData, poet: val}); handleDebouncedAuto('poet', val); }} placeholder="Type Poet (Roman)..." className="w-full border-b-2 p-3 outline-none focus:border-amber-500 transition" />
+                     <input value={formData.poetHindi || ''} onChange={e => setFormData({...formData, poetHindi: e.target.value})} placeholder="कवि (Hindi)..." className="w-full border-b-2 p-3 outline-none bg-stone-50 font-serif rounded-t-lg" />
+                  </div>
+                </div>
+
+                {/* Media Section */}
+                <div className="bg-stone-50 p-6 md:p-8 rounded-3xl border border-stone-200">
+                  <label className="block text-[10px] font-black uppercase text-stone-500 mb-6 tracking-widest">Audio & Media</label>
+                  <div className="flex flex-wrap gap-3 mb-6">
+                    <button type="button" onClick={isRecording ? stopRecording : startRecording} className={`flex items-center gap-2 px-5 py-3 rounded-full font-black shadow-md transition text-xs uppercase tracking-widest ${isRecording ? 'bg-red-600 text-white animate-pulse' : 'bg-stone-900 text-white hover:bg-stone-800'}`}>
+                      {isRecording ? <StopCircle className="w-4 h-4" /> : <Mic className="w-4 h-4" />} {isRecording ? 'Stop Recording' : 'Record Live'}
+                    </button>
+                    <label className="flex items-center gap-2 px-5 py-3 bg-white border border-stone-200 rounded-full cursor-pointer hover:border-amber-400 transition shadow-sm font-black text-stone-600 text-xs uppercase tracking-widest">
+                      <Upload className="w-4 h-4" /> Upload File
+                      <input type="file" accept="audio/*" onChange={handleFile} className="hidden" />
+                    </label>
+                    <button type="button" onClick={() => setShowLinkInput(!showLinkInput)} className={`flex items-center gap-2 px-5 py-3 border rounded-full cursor-pointer transition shadow-sm font-black text-xs uppercase tracking-widest ${showLinkInput ? 'bg-amber-50 border-amber-300 text-amber-700' : 'bg-white border-stone-200 text-stone-600 hover:border-amber-400'}`}>
+                      <LinkIcon className="w-4 h-4" /> Paste Link
+                    </button>
+                  </div>
+                  {showLinkInput && (
+                    <input type="url" placeholder="https://youtube.com/..." value={formData.mediaUrl || ''} onChange={(e) => { setFormData(prev => ({ ...prev, mediaUrl: e.target.value })); setAudioData(null); }} className="w-full border p-3 rounded-xl outline-none focus:border-amber-500 mb-4" />
+                  )}
+                  {uploading && <div className="mb-4"><div className="flex justify-between text-xs font-bold text-amber-600 mb-1"><span>Uploading...</span><span>{progress}%</span></div><div className="h-2 bg-stone-200 rounded-full overflow-hidden"><div className="h-full bg-amber-500 transition-all" style={{width: `${progress}%`}}></div></div></div>}
+                  {formData.mediaUrl && (
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-100 flex flex-col gap-4">
+                      <MediaRenderer url={formData.mediaUrl} />
+                      <div className="flex flex-wrap gap-3">
+                        <button type="button" onClick={handleTranscribe} disabled={aiProcessing || !audioData} className="bg-amber-100 text-amber-900 px-4 py-2 rounded-full flex items-center gap-2 text-xs font-black uppercase tracking-widest hover:bg-amber-200 transition disabled:opacity-50">
+                          {aiProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />} Auto-Transcribe Audio
+                        </button>
+                        <button type="button" onClick={() => { setFormData(p => ({...p, mediaUrl: ''})); setAudioData(null); }} className="text-red-500 hover:bg-red-50 px-4 py-2 rounded-full text-xs font-bold transition">Remove Media</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                     <label className="text-[10px] font-black uppercase text-amber-600 tracking-widest ml-1">Hindi Text</label>
+                     <textarea rows="8" value={formData.hindiText || ''} onChange={e => { const val = e.target.value; setFormData({...formData, hindiText: val}); handleDebouncedAuto('roman', val); }} placeholder="Hindi Text (Auto-generates Roman)..." className="w-full border p-6 rounded-2xl font-serif text-xl outline-none focus:border-amber-500 transition" />
+                  </div>
+                  <div className="space-y-2">
+                     <label className="text-[10px] font-black uppercase text-stone-400 tracking-widest ml-1">Roman Transliteration</label>
+                     <textarea rows="8" value={formData.romanText || ''} onChange={e => { const val = e.target.value; setFormData({...formData, romanText: val}); handleDebouncedAuto('hindi', val); }} placeholder="Roman Text (Auto-generates Hindi)..." className="w-full border p-6 rounded-2xl font-serif text-xl italic bg-stone-50 outline-none focus:border-stone-400 transition" />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                     <div className="flex justify-between"><label className="text-[10px] font-black uppercase text-stone-400 tracking-widest">Essence & Meaning</label> <button type="button" onClick={() => auto('essence', formData.hindiText)} className="text-[10px] font-bold bg-amber-50 text-amber-700 px-3 py-1 rounded-full uppercase tracking-widest">Auto Generate</button></div>
+                     <textarea rows="4" value={formData.essence || ''} onChange={e => setFormData({...formData, essence: e.target.value})} placeholder="Summary..." className="w-full border p-5 rounded-2xl text-sm outline-none focus:border-amber-500" />
+                  </div>
+                  <div className="space-y-2">
+                     <div className="flex justify-between"><label className="text-[10px] font-black uppercase text-stone-400 tracking-widest">Urdu Glossary</label> <button type="button" onClick={() => auto('vocab', formData.hindiText)} className="text-[10px] font-bold bg-amber-50 text-amber-700 px-3 py-1 rounded-full uppercase tracking-widest">Auto Extract</button></div>
+                     <textarea rows="4" value={formData.vocabulary || ''} onChange={e => setFormData({...formData, vocabulary: e.target.value})} placeholder="Word - Meaning..." className="w-full border p-5 rounded-2xl text-sm outline-none focus:border-amber-500" />
+                  </div>
+                </div>
+
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                      <div className="flex justify-between"><label className="text-[10px] font-black uppercase text-stone-400 tracking-widest">Classification (Roman ⇄ Hindi)</label> <button type="button" onClick={() => auto('class', formData.hindiText)} className="text-[10px] font-bold bg-amber-50 text-amber-700 px-3 py-1 rounded-full uppercase tracking-widest">Auto Detect</button></div>
