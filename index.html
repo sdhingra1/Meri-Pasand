@@ -217,23 +217,31 @@
 
     const HomeView = ({ poems, goToDetail, setSharePoem }) => {
       const [searchQuery, setSearchQuery] = useState('');
-      const [selectedFilter, setSelectedFilter] = useState('All');
+      const [selectedPoet, setSelectedPoet] = useState('All');
+      const [selectedType, setSelectedType] = useState('All');
 
       const uniquePoets = useMemo(() => {
         const poetSet = new Set();
-        poems.forEach(p => { poetSet.add(p.poet || p.poetHindi || 'Unknown'); });
+        poems.forEach(p => { if (p.poet || p.poetHindi) poetSet.add(p.poet || p.poetHindi); });
         return ['All', ...Array.from(poetSet).sort()];
+      }, [poems]);
+
+      const uniqueTypes = useMemo(() => {
+        const typeSet = new Set();
+        poems.forEach(p => { if (p.classification) typeSet.add(p.classification); });
+        return ['All', ...Array.from(typeSet).sort()];
       }, [poems]);
 
       const filteredPoems = useMemo(() => {
         return poems.filter(p => {
           const poetName = p.poet || p.poetHindi || 'Unknown';
-          const matchesPoet = selectedFilter === 'All' || poetName === selectedFilter;
+          const matchesPoet = selectedPoet === 'All' || poetName === selectedPoet;
+          const matchesType = selectedType === 'All' || p.classification === selectedType;
           const q = searchQuery.toLowerCase();
           const matchesSearch = (p.title || '').toLowerCase().includes(q) || (p.titleHindi || '').toLowerCase().includes(q) || (p.poet || '').toLowerCase().includes(q) || (p.poetHindi || '').toLowerCase().includes(q) || (p.hindiText || '').toLowerCase().includes(q) || (p.romanText || '').toLowerCase().includes(q);
-          return matchesPoet && matchesSearch;
+          return matchesPoet && matchesType && matchesSearch;
         });
-      }, [poems, searchQuery, selectedFilter]);
+      }, [poems, searchQuery, selectedPoet, selectedType]);
 
       return (
         <div className="max-w-7xl mx-auto p-4 md:p-8">
@@ -244,11 +252,41 @@
              </div>
           </div>
           
-          <div className="bg-white p-4 md:p-6 rounded-[2rem] shadow-lg border border-stone-200 mb-10 sticky top-[76px] z-10">
+          <div className="bg-white p-4 md:p-6 rounded-[2rem] shadow-lg border border-stone-200 mb-10 sticky top-[76px] z-10 flex flex-col gap-4">
              <div className="flex items-center relative">
                 <Search className="absolute left-4 w-5 h-5 text-stone-400" />
                 <input type="text" placeholder="Search poems, poets, or words..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-stone-50 border border-stone-200 py-4 pl-12 pr-12 rounded-full outline-none focus:ring-2 focus:ring-amber-500 font-medium" />
                 {searchQuery && <button onClick={() => setSearchQuery('')} className="absolute right-4 text-stone-400 hover:text-stone-600"><X className="w-5 h-5" /></button>}
+             </div>
+
+             <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1 relative">
+                  <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                    <Filter className="w-4 h-4 text-stone-400" />
+                  </div>
+                  <select value={selectedPoet} onChange={(e) => setSelectedPoet(e.target.value)} className="w-full bg-stone-50 border border-stone-200 py-3 pl-10 pr-10 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 font-medium text-stone-600 appearance-none cursor-pointer">
+                    {uniquePoets.map(poet => (
+                      <option key={poet} value={poet}>{poet === 'All' ? 'All Poets' : poet}</option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                    <ChevronLeft className="w-4 h-4 text-stone-400 -rotate-90" />
+                  </div>
+                </div>
+                
+                <div className="flex-1 relative">
+                  <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                    <Filter className="w-4 h-4 text-stone-400" />
+                  </div>
+                  <select value={selectedType} onChange={(e) => setSelectedType(e.target.value)} className="w-full bg-stone-50 border border-stone-200 py-3 pl-10 pr-10 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 font-medium text-stone-600 appearance-none cursor-pointer">
+                    {uniqueTypes.map(type => (
+                      <option key={type} value={type}>{type === 'All' ? 'All Forms/Types' : type}</option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                    <ChevronLeft className="w-4 h-4 text-stone-400 -rotate-90" />
+                  </div>
+                </div>
              </div>
           </div>
 
