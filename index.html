@@ -27,7 +27,7 @@
     import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
     import { 
       BookOpen, Play, Video, MessageSquare, Settings, 
-      Edit, Trash2, Plus, ChevronLeft, LogIn, LogOut, 
+      Edit, Trash2, Plus, ChevronLeft, ChevronRight, LogIn, LogOut, 
       Save, X, Headphones, List, Mic, StopCircle, Upload, 
       Loader2, Wand2, CheckCircle, AlertCircle, Info, 
       ExternalLink, Link as LinkIcon, Search, Filter, Star,
@@ -148,6 +148,14 @@
       return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : url;
     };
 
+    // Helper function to show both Roman and Hindi beautifully
+    const formatLabel = (roman, hindi) => {
+      const r = (roman || '').trim();
+      const h = (hindi || '').trim();
+      if (r && h && r !== h) return `${r} / ${h}`;
+      return r || h || 'Unknown';
+    };
+
     // --- REUSABLE UI COMPONENTS (MOVED OUTSIDE APP TO FIX FOCUS/STATE LOSS) ---
 
     const MediaRenderer = ({ url }) => {
@@ -222,23 +230,41 @@
 
       const uniquePoets = useMemo(() => {
         const poetSet = new Set();
-        poems.forEach(p => { if (p.poet || p.poetHindi) poetSet.add(p.poet || p.poetHindi); });
+        poems.forEach(p => { 
+          const label = formatLabel(p.poet, p.poetHindi);
+          if (label !== 'Unknown') poetSet.add(label); 
+        });
         return ['All', ...Array.from(poetSet).sort()];
       }, [poems]);
 
       const uniqueTypes = useMemo(() => {
         const typeSet = new Set();
-        poems.forEach(p => { if (p.classification) typeSet.add(p.classification); });
+        poems.forEach(p => { 
+          const label = formatLabel(p.classification, p.classificationHindi);
+          if (label !== 'Unknown') typeSet.add(label); 
+        });
         return ['All', ...Array.from(typeSet).sort()];
       }, [poems]);
 
       const filteredPoems = useMemo(() => {
         return poems.filter(p => {
-          const poetName = p.poet || p.poetHindi || 'Unknown';
-          const matchesPoet = selectedPoet === 'All' || poetName === selectedPoet;
-          const matchesType = selectedType === 'All' || p.classification === selectedType;
+          const poetLabel = formatLabel(p.poet, p.poetHindi);
+          const matchesPoet = selectedPoet === 'All' || poetLabel === selectedPoet;
+          
+          const typeLabel = formatLabel(p.classification, p.classificationHindi);
+          const matchesType = selectedType === 'All' || typeLabel === selectedType;
+          
           const q = searchQuery.toLowerCase();
-          const matchesSearch = (p.title || '').toLowerCase().includes(q) || (p.titleHindi || '').toLowerCase().includes(q) || (p.poet || '').toLowerCase().includes(q) || (p.poetHindi || '').toLowerCase().includes(q) || (p.hindiText || '').toLowerCase().includes(q) || (p.romanText || '').toLowerCase().includes(q);
+          const matchesSearch = !q || 
+            (p.title || '').toLowerCase().includes(q) || 
+            (p.titleHindi || '').toLowerCase().includes(q) || 
+            (p.poet || '').toLowerCase().includes(q) || 
+            (p.poetHindi || '').toLowerCase().includes(q) || 
+            (p.hindiText || '').toLowerCase().includes(q) || 
+            (p.romanText || '').toLowerCase().includes(q) ||
+            (p.classification || '').toLowerCase().includes(q) ||
+            (p.classificationHindi || '').toLowerCase().includes(q);
+
           return matchesPoet && matchesType && matchesSearch;
         });
       }, [poems, searchQuery, selectedPoet, selectedType]);
@@ -294,17 +320,16 @@
             {filteredPoems.map(p => {
                const isAudioOnly = p.mediaUrl && (p.mediaUrl.match(/\.(mp3|wav|m4a|aac|ogg|webm)(\?.*)?$/i) || p.mediaUrl.startsWith('data:audio'));
                return (
-                <div key={p.id} onClick={() => goToDetail(p)} className="bg-white p-8 rounded-[2.5rem] border border-stone-100 shadow-sm hover:shadow-2xl hover:border-amber-300 hover:-translate-y-2 transition-all duration-300 cursor-pointer group flex flex-col h-full relative overflow-hidden">
-                   <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50 rounded-bl-[100px] -mr-10 -mt-10 opacity-50 group-hover:bg-amber-100 transition-colors"></div>
-                   <div className="relative z-10 flex-grow">
-                      <h3 className="text-2xl font-serif font-bold text-stone-800 mb-1 group-hover:text-amber-800 transition">{p.titleHindi || p.title}</h3>
-                      <div className="flex flex-wrap gap-2 mt-3 mb-6">
-                        <span className="px-3 py-1 bg-stone-50 border border-stone-100 rounded-lg text-stone-600 font-bold text-[10px] uppercase tracking-widest">By {p.poetHindi || p.poet}</span>
-                        {p.classification && <span className="px-3 py-1 bg-amber-50 border border-amber-100 rounded-lg text-amber-700 font-bold text-[10px] uppercase tracking-widest">{p.classification}</span>}
+                <div key={p.id} onClick={() => goToDetail(p)} className="bg-white p-6 rounded-[2rem] border border-stone-100 shadow-sm hover:shadow-2xl hover:border-amber-300 hover:-translate-y-2 transition-all duration-300 cursor-pointer group flex flex-col h-full relative overflow-hidden">
+                   <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50 rounded-bl-[80px] -mr-8 -mt-8 opacity-50 group-hover:bg-amber-100 transition-colors"></div>
+                   <div className="relative z-10 flex-grow mb-4">
+                      <h3 className="text-2xl font-serif font-bold text-stone-800 mb-2 group-hover:text-amber-800 transition">{p.titleHindi || p.title}</h3>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <span className="px-3 py-1 bg-stone-50 border border-stone-100 rounded-lg text-stone-600 font-bold text-[10px] uppercase tracking-widest">By {formatLabel(p.poet, p.poetHindi)}</span>
+                        {(p.classification || p.classificationHindi) && <span className="px-3 py-1 bg-amber-50 border border-amber-100 rounded-lg text-amber-700 font-bold text-[10px] uppercase tracking-widest">{formatLabel(p.classification, p.classificationHindi)}</span>}
                       </div>
-                      <p className="text-stone-500 line-clamp-3 italic font-serif leading-relaxed mb-6">{p.hindiText}</p>
                    </div>
-                   <div className="relative z-10 flex items-center justify-between pt-6 border-t border-stone-100">
+                   <div className="relative z-10 flex items-center justify-between pt-4 border-t border-stone-100">
                       <button onClick={(e) => {e.stopPropagation(); setSharePoem(p);}} className="p-3 bg-stone-50 border border-stone-100 rounded-full text-stone-400 hover:text-amber-600 hover:border-amber-200 hover:bg-amber-50 transition shadow-sm"><Share2 className="w-4 h-4"/></button>
                       {p.mediaUrl && <div className="bg-amber-500 text-white px-5 py-2 rounded-full font-black text-[10px] uppercase tracking-widest flex items-center gap-2 shadow-lg group-hover:bg-amber-600 group-hover:-translate-y-1 transition transform">Listen Now <Play className="w-3 h-3 fill-white"/></div>}
                    </div>
@@ -315,7 +340,7 @@
       );
     };
 
-    const PoemDetailView = ({ selectedPoem, poems, goHome, setSharePoem, user }) => {
+    const PoemDetailView = ({ selectedPoem, poems, goHome, goToDetail, setSharePoem, user }) => {
       const [comments, setComments] = useState([]);
       const [newComment, setNewComment] = useState('');
       const [newRating, setNewRating] = useState(0);
@@ -325,6 +350,10 @@
       if (!selectedPoem) return null;
       const currentPoem = poems.find(p => p.id === selectedPoem?.id) || selectedPoem;
       const avgRating = currentPoem?.ratingCount ? (currentPoem.ratingSum / currentPoem.ratingCount).toFixed(1) : 0;
+
+      const currentIndex = poems.findIndex(p => p.id === currentPoem.id);
+      const prevPoem = currentIndex > 0 ? poems[currentIndex - 1] : null;
+      const nextPoem = currentIndex >= 0 && currentIndex < poems.length - 1 ? poems[currentIndex + 1] : null;
 
       useEffect(() => {
         if (!user || !selectedPoem) return;
@@ -430,6 +459,28 @@
             </div>
           )}
 
+          <div className="flex flex-col sm:flex-row gap-4 justify-between items-center mb-12">
+            {prevPoem ? (
+              <button onClick={() => goToDetail(prevPoem)} className="flex items-center gap-4 bg-white border border-stone-200 px-6 py-4 rounded-2xl shadow-sm hover:shadow-md hover:border-amber-300 transition w-full sm:w-auto group">
+                 <ChevronLeft className="w-6 h-6 text-stone-400 group-hover:text-amber-500 transition shrink-0" />
+                 <div className="text-left">
+                   <div className="text-[10px] font-black uppercase text-stone-400 tracking-widest">Previous</div>
+                   <div className="font-serif font-bold text-stone-800 line-clamp-1">{prevPoem.titleHindi || prevPoem.title}</div>
+                 </div>
+              </button>
+            ) : <div className="hidden sm:block"></div>}
+            
+            {nextPoem ? (
+              <button onClick={() => goToDetail(nextPoem)} className="flex items-center gap-4 bg-white border border-stone-200 px-6 py-4 rounded-2xl shadow-sm hover:shadow-md hover:border-amber-300 transition w-full sm:w-auto group justify-end sm:text-right">
+                 <div className="text-right">
+                   <div className="text-[10px] font-black uppercase text-stone-400 tracking-widest">Next</div>
+                   <div className="font-serif font-bold text-stone-800 line-clamp-1">{nextPoem.titleHindi || nextPoem.title}</div>
+                 </div>
+                 <ChevronRight className="w-6 h-6 text-stone-400 group-hover:text-amber-500 transition shrink-0" />
+              </button>
+            ) : <div className="hidden sm:block"></div>}
+          </div>
+
           <div className="max-w-4xl mx-auto bg-white rounded-[2.5rem] shadow-lg border border-stone-200 overflow-hidden">
               <div className="p-10 md:p-12 border-b border-stone-100 bg-stone-50">
                  <h3 className="text-3xl font-black text-stone-800 mb-2 flex items-center gap-3"><MessageSquare className="w-8 h-8 text-amber-500" /> Reader Reflections</h3>
@@ -520,7 +571,7 @@
 
       const handleCreate = () => { 
         setEditingPoem({id:'new'}); 
-        setFormData({title:'', titleHindi:'', poet:'', poetHindi:'', hindiText:'', romanText:'', vocabulary:'', essence:'', classification:'', mediaUrl:'', rank:poems.length+1}); 
+        setFormData({title:'', titleHindi:'', poet:'', poetHindi:'', hindiText:'', romanText:'', vocabulary:'', essence:'', classification:'', classificationHindi:'', mediaUrl:'', rank:poems.length+1}); 
         setFormError(''); setAudioData(null); setShowLinkInput(false);
       };
       
@@ -536,10 +587,18 @@
         setAiProcessing(true);
         try {
           if (type === 'title') { const res = await transliterateText(val, 'hindi'); setFormData(p => ({...p, titleHindi: res})); }
-          if (type === 'poet') { const res = await transliterateText(val, 'hindi'); setFormData(p => ({...p, poetHindi: res})); }
+          if (type === 'poet') { const res = await transliterateText(val, 'hindi'); setFormData(p => ({...p, poetHindi: p.poetHindi ? p.poetHindi : res})); }
+          if (type === 'poetHindi') { const res = await transliterateText(val, 'roman'); setFormData(p => ({...p, poet: p.poet ? p.poet : res})); }
           if (type === 'essence') { const res = await extractPoemEssence(val); setFormData(p => ({...p, essence: res})); }
           if (type === 'vocab') { const res = await extractUrduVocabulary(val); setFormData(p => ({...p, vocabulary: res})); }
-          if (type === 'class') { const res = await classifyPoem(val); setFormData(p => ({...p, classification: res})); }
+          if (type === 'class') { 
+            const res = await classifyPoem(val); 
+            setFormData(p => ({...p, classification: res}));
+            const resHindi = await transliterateText(res, 'hindi');
+            setFormData(p => ({...p, classificationHindi: p.classificationHindi ? p.classificationHindi : resHindi}));
+          }
+          if (type === 'classRoman') { const res = await transliterateText(val, 'hindi'); setFormData(p => ({...p, classificationHindi: p.classificationHindi ? p.classificationHindi : res})); }
+          if (type === 'classHindi') { const res = await transliterateText(val, 'roman'); setFormData(p => ({...p, classification: p.classification ? p.classification : res})); }
           if (type === 'roman') { const res = await transliterateText(val, 'roman'); setFormData(p => ({...p, romanText: res})); }
           if (type === 'hindi') { const res = await transliterateText(val, 'hindi'); setFormData(p => ({...p, hindiText: res})); }
         } catch(e) { console.error(e); }
@@ -662,75 +721,9 @@
               <form onSubmit={save} className="space-y-8">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                     <label className="text-[10px] font-black uppercase text-stone-400 block ml-1">Title (Roman) to Auto Hindi</label>
-                     <input value={formData.title || ''} onChange={e => { const val = e.target.value; setFormData({...formData, title: val}); handleDebouncedAuto('title', val); }} placeholder="Type Title (Roman)..." className="w-full border-b-2 p-3 outline-none focus:border-amber-500 transition" />
-                     <input value={formData.titleHindi || ''} onChange={e => setFormData({...formData, titleHindi: e.target.value})} placeholder="शीर्षक (Hindi)..." className="w-full border-b-2 p-3 outline-none bg-stone-50 font-serif text-lg rounded-t-lg" />
-                  </div>
-                  <div className="space-y-2">
-                     <label className="text-[10px] font-black uppercase text-stone-400 block ml-1">Poet (Roman) to Auto Hindi</label>
-                     <input value={formData.poet || ''} onChange={e => { const val = e.target.value; setFormData({...formData, poet: val}); handleDebouncedAuto('poet', val); }} placeholder="Type Poet (Roman)..." className="w-full border-b-2 p-3 outline-none focus:border-amber-500 transition" />
-                     <input value={formData.poetHindi || ''} onChange={e => setFormData({...formData, poetHindi: e.target.value})} placeholder="कवि (Hindi)..." className="w-full border-b-2 p-3 outline-none bg-stone-50 font-serif rounded-t-lg" />
-                  </div>
-                </div>
-
-                {/* Media Section */}
-                <div className="bg-stone-50 p-6 md:p-8 rounded-3xl border border-stone-200">
-                  <label className="block text-[10px] font-black uppercase text-stone-500 mb-6 tracking-widest">Audio & Media</label>
-                  <div className="flex flex-wrap gap-3 mb-6">
-                    <button type="button" onClick={isRecording ? stopRecording : startRecording} className={`flex items-center gap-2 px-5 py-3 rounded-full font-black shadow-md transition text-xs uppercase tracking-widest ${isRecording ? 'bg-red-600 text-white animate-pulse' : 'bg-stone-900 text-white hover:bg-stone-800'}`}>
-                      {isRecording ? <StopCircle className="w-4 h-4" /> : <Mic className="w-4 h-4" />} {isRecording ? 'Stop Recording' : 'Record Live'}
-                    </button>
-                    <label className="flex items-center gap-2 px-5 py-3 bg-white border border-stone-200 rounded-full cursor-pointer hover:border-amber-400 transition shadow-sm font-black text-stone-600 text-xs uppercase tracking-widest">
-                      <Upload className="w-4 h-4" /> Upload File
-                      <input type="file" accept="audio/*" onChange={handleFile} className="hidden" />
-                    </label>
-                    <button type="button" onClick={() => setShowLinkInput(!showLinkInput)} className={`flex items-center gap-2 px-5 py-3 border rounded-full cursor-pointer transition shadow-sm font-black text-xs uppercase tracking-widest ${showLinkInput ? 'bg-amber-50 border-amber-300 text-amber-700' : 'bg-white border-stone-200 text-stone-600 hover:border-amber-400'}`}>
-                      <LinkIcon className="w-4 h-4" /> Paste Link
-                    </button>
-                  </div>
-                  {showLinkInput && (
-                    <input type="url" placeholder="https://youtube.com/..." value={formData.mediaUrl || ''} onChange={(e) => { setFormData(prev => ({ ...prev, mediaUrl: e.target.value })); setAudioData(null); }} className="w-full border p-3 rounded-xl outline-none focus:border-amber-500 mb-4" />
-                  )}
-                  {uploading && <div className="mb-4"><div className="flex justify-between text-xs font-bold text-amber-600 mb-1"><span>Uploading...</span><span>{progress}%</span></div><div className="h-2 bg-stone-200 rounded-full overflow-hidden"><div className="h-full bg-amber-500 transition-all" style={{width: `${progress}%`}}></div></div></div>}
-                  {formData.mediaUrl && (
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-100 flex flex-col gap-4">
-                      <MediaRenderer url={formData.mediaUrl} />
-                      <div className="flex flex-wrap gap-3">
-                        <button type="button" onClick={handleTranscribe} disabled={aiProcessing || !audioData} className="bg-amber-100 text-amber-900 px-4 py-2 rounded-full flex items-center gap-2 text-xs font-black uppercase tracking-widest hover:bg-amber-200 transition disabled:opacity-50">
-                          {aiProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />} Auto-Transcribe Audio
-                        </button>
-                        <button type="button" onClick={() => { setFormData(p => ({...p, mediaUrl: ''})); setAudioData(null); }} className="text-red-500 hover:bg-red-50 px-4 py-2 rounded-full text-xs font-bold transition">Remove Media</button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                     <label className="text-[10px] font-black uppercase text-amber-600 tracking-widest ml-1">Hindi Text</label>
-                     <textarea rows="8" value={formData.hindiText || ''} onChange={e => { const val = e.target.value; setFormData({...formData, hindiText: val}); handleDebouncedAuto('roman', val); }} placeholder="Hindi Text (Auto-generates Roman)..." className="w-full border p-6 rounded-2xl font-serif text-xl outline-none focus:border-amber-500 transition" />
-                  </div>
-                  <div className="space-y-2">
-                     <label className="text-[10px] font-black uppercase text-stone-400 tracking-widest ml-1">Roman Transliteration</label>
-                     <textarea rows="8" value={formData.romanText || ''} onChange={e => { const val = e.target.value; setFormData({...formData, romanText: val}); handleDebouncedAuto('hindi', val); }} placeholder="Roman Text (Auto-generates Hindi)..." className="w-full border p-6 rounded-2xl font-serif text-xl italic bg-stone-50 outline-none focus:border-stone-400 transition" />
-                  </div>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                     <div className="flex justify-between"><label className="text-[10px] font-black uppercase text-stone-400 tracking-widest">Essence & Meaning</label> <button type="button" onClick={() => auto('essence', formData.hindiText)} className="text-[10px] font-bold bg-amber-50 text-amber-700 px-3 py-1 rounded-full uppercase tracking-widest">Auto Generate</button></div>
-                     <textarea rows="4" value={formData.essence || ''} onChange={e => setFormData({...formData, essence: e.target.value})} placeholder="Summary..." className="w-full border p-5 rounded-2xl text-sm outline-none focus:border-amber-500" />
-                  </div>
-                  <div className="space-y-2">
-                     <div className="flex justify-between"><label className="text-[10px] font-black uppercase text-stone-400 tracking-widest">Urdu Glossary</label> <button type="button" onClick={() => auto('vocab', formData.hindiText)} className="text-[10px] font-bold bg-amber-50 text-amber-700 px-3 py-1 rounded-full uppercase tracking-widest">Auto Extract</button></div>
-                     <textarea rows="4" value={formData.vocabulary || ''} onChange={e => setFormData({...formData, vocabulary: e.target.value})} placeholder="Word - Meaning..." className="w-full border p-5 rounded-2xl text-sm outline-none focus:border-amber-500" />
-                  </div>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                     <div className="flex justify-between"><label className="text-[10px] font-black uppercase text-stone-400 tracking-widest">Classification</label> <button type="button" onClick={() => auto('class', formData.hindiText)} className="text-[10px] font-bold bg-amber-50 text-amber-700 px-3 py-1 rounded-full uppercase tracking-widest">Auto Detect</button></div>
-                     <input placeholder="e.g., Ghazal, Nazm..." value={formData.classification || ''} onChange={e => setFormData({...formData, classification: e.target.value})} className="w-full border-b-2 p-3 outline-none focus:border-amber-500 text-lg" />
+                     <div className="flex justify-between"><label className="text-[10px] font-black uppercase text-stone-400 tracking-widest">Classification (Roman ⇄ Hindi)</label> <button type="button" onClick={() => auto('class', formData.hindiText)} className="text-[10px] font-bold bg-amber-50 text-amber-700 px-3 py-1 rounded-full uppercase tracking-widest">Auto Detect</button></div>
+                     <input value={formData.classification || ''} onChange={e => { const val = e.target.value; setFormData({...formData, classification: val}); handleDebouncedAuto('classRoman', val); }} placeholder="e.g. Ghazal (Roman)..." className="w-full border-b-2 p-3 outline-none focus:border-amber-500 transition" />
+                     <input value={formData.classificationHindi || ''} onChange={e => { const val = e.target.value; setFormData({...formData, classificationHindi: val}); handleDebouncedAuto('classHindi', val); }} placeholder="उदा. ग़ज़ल (Hindi)..." className="w-full border-b-2 p-3 outline-none bg-stone-50 font-serif rounded-t-lg mt-2" />
                   </div>
                   <div className="space-y-2">
                      <label className="text-[10px] font-black uppercase text-stone-400 tracking-widest block ml-1">Sort Rank</label>
@@ -759,8 +752,8 @@
                     ) : poems.map(p => (
                       <tr key={p.id} className="hover:bg-stone-50 transition group">
                         <td className="p-6 font-bold text-stone-400">{p.rank}</td>
-                        <td className="p-6"><div className="font-serif font-bold text-xl text-stone-800">{p.titleHindi || p.title}</div><div className="text-xs font-bold text-stone-400 uppercase tracking-widest mt-1">By {p.poetHindi || p.poet}</div></td>
-                        <td className="p-6"><span className="text-[10px] font-black bg-amber-50 text-amber-700 px-3 py-1.5 rounded-full uppercase tracking-widest">{p.classification || 'None'}</span></td>
+                        <td className="p-6"><div className="font-serif font-bold text-xl text-stone-800">{p.titleHindi || p.title}</div><div className="text-xs font-bold text-stone-400 uppercase tracking-widest mt-1">By {formatLabel(p.poet, p.poetHindi)}</div></td>
+                        <td className="p-6"><span className="text-[10px] font-black bg-amber-50 text-amber-700 px-3 py-1.5 rounded-full uppercase tracking-widest">{formatLabel(p.classification, p.classificationHindi)}</span></td>
                         <td className="p-6 text-right">
                           <div className="flex justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
                             <button onClick={() => handleEdit(p)} className="p-3 bg-white border border-stone-200 rounded-full hover:text-amber-600 hover:border-amber-300 shadow-sm transition"><Edit className="w-4 h-4"/></button>
@@ -824,8 +817,8 @@
         }
       }, [poems]);
 
-      const goHome = () => { setView('home'); setSelectedPoem(null); window.history.pushState({}, '', window.location.pathname); };
-      const goToDetail = (p) => { setSelectedPoem(p); setView('detail'); window.history.pushState({}, '', `?poem=${p.id}`); };
+      const goHome = () => { setView('home'); setSelectedPoem(null); window.history.pushState({}, '', window.location.pathname); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+      const goToDetail = (p) => { setSelectedPoem(p); setView('detail'); window.history.pushState({}, '', `?poem=${p.id}`); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
       const handleAdminLogin = (e) => {
         e.preventDefault();
@@ -845,7 +838,7 @@
               <Header goHome={goHome} isAdmin={isAdmin} setView={setView} view={view} setShowAdminLogin={setShowAdminLogin} />
               <main className="pb-32">
                 {view === 'home' && <HomeView poems={poems} goToDetail={goToDetail} setSharePoem={setSharePoem} />}
-                {view === 'detail' && <PoemDetailView selectedPoem={selectedPoem} poems={poems} goHome={goHome} setSharePoem={setSharePoem} user={user} />}
+                {view === 'detail' && <PoemDetailView selectedPoem={selectedPoem} poems={poems} goHome={goHome} goToDetail={goToDetail} setSharePoem={setSharePoem} user={user} />}
                 {view === 'admin' && isAdmin && <AdminDashboard poems={poems} user={user} />}
               </main>
               
