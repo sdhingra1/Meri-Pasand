@@ -162,7 +162,7 @@
       if (!url) return null;
       const ytUrl = getYouTubeEmbedUrl(url);
       if (ytUrl !== url) return <iframe src={ytUrl} className="w-full aspect-video rounded-[1.5rem] border-0 shadow-lg" allowFullScreen></iframe>;
-      const isAudio = url.match(/\.(mp3|wav|m4a|aac|ogg|webm)(\?.*)?$/i) || url.startsWith('data:audio');
+      const isAudio = url.match(/\.(mp3|wav|m4a|aac|ogg|webm|mp4)(\?.*)?$/i) || url.startsWith('data:audio');
       if (isAudio) return <audio controls className="w-full shadow-inner rounded-full outline-none mt-4" src={url} />;
       return <video controls className="w-full aspect-video rounded-2xl bg-black mt-4" src={url} />;
     };
@@ -356,7 +356,7 @@
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
             {filteredPoems.map(p => {
-               const isAudioOnly = p.mediaUrl && (p.mediaUrl.match(/\.(mp3|wav|m4a|aac|ogg|webm)(\?.*)?$/i) || p.mediaUrl.startsWith('data:audio'));
+               const isAudioOnly = p.mediaUrl && (p.mediaUrl.match(/\.(mp3|wav|m4a|aac|ogg|webm|mp4)(\?.*)?$/i) || p.mediaUrl.startsWith('data:audio'));
                return (
                 <div key={p.id} onClick={() => goToDetail(p)} className="bg-white p-6 rounded-[2rem] border border-stone-100 shadow-sm hover:shadow-2xl hover:border-amber-300 hover:-translate-y-2 transition-all duration-300 cursor-pointer group flex flex-col h-full relative overflow-hidden">
                    <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50 rounded-bl-[80px] -mr-8 -mt-8 opacity-50 group-hover:bg-amber-100 transition-colors"></div>
@@ -657,10 +657,13 @@
         if (!file || !user) return;
         setUploading(true); setFormError(''); setShowLinkInput(false);
         const b64 = await blobToBase64(file);
-        setAudioData({ base64: b64, mimeType: file.type });
+        
+        // Mobile browsers might output video/mp4 when recording audio natively.
+        setAudioData({ base64: b64, mimeType: file.type || 'audio/mp3' });
 
         if (storage) {
-          const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+          const safeName = file.name ? file.name.replace(/\s+/g, '_') : 'native_recording.mp4';
+          const fileName = `${Date.now()}_${safeName}`;
           const path = `poetry_media/${fileName}`;
           const sRef = ref(storage, path);
           const task = uploadBytesResumable(sRef, file);
@@ -670,6 +673,9 @@
             async () => { const url = await getDownloadURL(task.snapshot.ref); setFormData(prev => ({ ...prev, mediaUrl: url })); setUploading(false); setProgress(0); }
           );
         } else { setFormError("Storage config missing."); setUploading(false); }
+        
+        // Reset the input value so the same file can be triggered again if needed
+        e.target.value = '';
       };
 
       const startRecording = async () => {
@@ -697,7 +703,9 @@
           };
           mediaRecorder.current.start();
           setIsRecording(true);
-        } catch(e) { alert("Mic error: " + e.message); }
+        } catch(e) { 
+          alert("Direct microphone access is restricted in this environment (e.g., inside Gemini Canvas or certain mobile browsers). \n\nPlease use the 'Device Record' or 'Upload File' buttons instead! \n\nError details: " + e.message); 
+        }
       };
 
       const stopRecording = () => { if (mediaRecorder.current) { mediaRecorder.current.stop(); setIsRecording(false); } };
@@ -774,12 +782,16 @@
                 <div className="bg-stone-50 p-6 md:p-8 rounded-3xl border border-stone-200">
                   <label className="block text-[10px] font-black uppercase text-stone-500 mb-6 tracking-widest">Audio & Media</label>
                   <div className="flex flex-wrap gap-3 mb-6">
-                    <button type="button" onClick={isRecording ? stopRecording : startRecording} className={`flex items-center gap-2 px-5 py-3 rounded-full font-black shadow-md transition text-xs uppercase tracking-widest ${isRecording ? 'bg-red-600 text-white animate-pulse' : 'bg-stone-900 text-white hover:bg-stone-800'}`}>
-                      {isRecording ? <StopCircle className="w-4 h-4" /> : <Mic className="w-4 h-4" />} {isRecording ? 'Stop Recording' : 'Record Live'}
+                    <button type="button" onClick={isRecording ? stopRecording : startRecording} className={`flex items-center gap-2 px-5 py-3 rounded-full font-black shadow-md transition text-xs uppercase tracking-widest ${isRecording ? 'bg-red-600 text-white animate-pulse' : 'bg-stone-900 text-white hover:bg-stone-800'}`} title="Uses browser microphone. May be blocked in some iframes.">
+                      {isRecording ? <StopCircle className="w-4 h-4" /> : <Mic className="w-4 h-4" />} {isRecording ? 'Stop' : 'Live Mic'}
                     </button>
+                    <label className="flex items-center gap-2 px-5 py-3 bg-white border border-stone-200 rounded-full cursor-pointer hover:border-amber-400 transition shadow-sm font-black text-stone-600 text-xs uppercase tracking-widest" title="Uses device's native voice recorder (Best for mobile and restricted browsers)">
+                      <Mic className="w-4 h-4" /> Device Record
+                      <input type="file" accept="audio/*,video/mp4,video/quicktime" capture="microphone" onChange={handleFile} className="hidden" />
+                    </label>
                     <label className="flex items-center gap-2 px-5 py-3 bg-white border border-stone-200 rounded-full cursor-pointer hover:border-amber-400 transition shadow-sm font-black text-stone-600 text-xs uppercase tracking-widest">
                       <Upload className="w-4 h-4" /> Upload File
-                      <input type="file" accept="audio/*" onChange={handleFile} className="hidden" />
+                      <input type="file" accept="audio/*,video/mp4,video/quicktime" onChange={handleFile} className="hidden" />
                     </label>
                     <button type="button" onClick={() => setShowLinkInput(!showLinkInput)} className={`flex items-center gap-2 px-5 py-3 border rounded-full cursor-pointer transition shadow-sm font-black text-xs uppercase tracking-widest ${showLinkInput ? 'bg-amber-50 border-amber-300 text-amber-700' : 'bg-white border-stone-200 text-stone-600 hover:border-amber-400'}`}>
                       <LinkIcon className="w-4 h-4" /> Paste Link
