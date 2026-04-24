@@ -191,20 +191,27 @@
     );
 
     const ShareModal = ({ sharePoem, setSharePoem }) => {
+      const [message, setMessage] = useState('');
+
       if (!sharePoem) return null;
       const url = `${window.location.origin}${window.location.pathname}?poem=${sharePoem.id}`;
       const title = sharePoem.titleHindi || sharePoem.title;
-      const copyToClipboard = (text) => {
+      const copyToClipboard = (text, customMsg) => {
         if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(text).then(() => alert('Link copied to clipboard!'));
+            navigator.clipboard.writeText(text).then(() => showMessage(customMsg || 'Link copied to clipboard!'));
         } else {
             const textArea = document.createElement("textarea");
             textArea.value = text;
             document.body.appendChild(textArea);
             textArea.select();
-            try { document.execCommand('copy'); alert('Link copied!'); } catch (err) {}
+            try { document.execCommand('copy'); showMessage(customMsg || 'Link copied!'); } catch (err) {}
             document.body.removeChild(textArea);
         }
+      };
+
+      const showMessage = (msg) => {
+        setMessage(msg);
+        setTimeout(() => setMessage(''), 3000);
       };
 
       return (
@@ -212,11 +219,14 @@
           <div className="bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-sm relative">
             <button onClick={() => setSharePoem(null)} className="absolute top-4 right-4 p-2 text-stone-400 hover:bg-stone-100 rounded-full transition"><X className="w-5 h-5"/></button>
             <h3 className="text-2xl font-black text-stone-800 mb-6">Share Poem</h3>
+            
+            {message && <div className="mb-4 p-3 bg-amber-50 text-amber-700 font-bold text-sm rounded-xl text-center animate-in fade-in">{message}</div>}
+
             <div className="flex flex-col gap-3">
               <button onClick={() => copyToClipboard(url)} className="flex items-center gap-3 bg-stone-100 p-4 rounded-xl font-bold text-stone-700 hover:bg-stone-200 transition"><Copy className="w-5 h-5 text-stone-500" /> Copy Direct Link</button>
               <a href={`https://wa.me/?text=${encodeURIComponent(`Listen to "${title}" recited by ${AUTHOR_NAME}:\n\n${url}`)}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 bg-[#e8fbf0] p-4 rounded-xl font-bold text-[#075e54] hover:bg-[#dcf8e8] transition"><MessageSquare className="w-5 h-5 text-[#25d366]" /> WhatsApp</a>
               <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 bg-blue-50 p-4 rounded-xl font-bold text-blue-700 hover:bg-blue-100 transition"><Facebook className="w-5 h-5 text-blue-600" /> Facebook</a>
-              <button onClick={() => { copyToClipboard(url); alert("Instagram doesn't support direct links here. The link is copied, paste it in your story or bio!"); }} className="flex items-center gap-3 bg-pink-50 p-4 rounded-xl font-bold text-pink-700 hover:bg-pink-100 transition text-left"><Instagram className="w-5 h-5 text-pink-600" /> Instagram</button>
+              <button onClick={() => copyToClipboard(url, "Link copied! Paste it in your Instagram story or bio.")} className="flex items-center gap-3 bg-pink-50 p-4 rounded-xl font-bold text-pink-700 hover:bg-pink-100 transition text-left"><Instagram className="w-5 h-5 text-pink-600" /> Instagram</button>
             </div>
           </div>
         </div>
@@ -604,8 +614,11 @@
       const [showLinkInput, setShowLinkInput] = useState(false);
       const [formError, setFormError] = useState('');
       const [audioData, setAudioData] = useState(null);
+      const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+      const [recordingTime, setRecordingTime] = useState(0);
 
       const mediaRecorder = useRef(null);
+      const timerRef = useRef(null);
 
       const handleCreate = () => { 
         setEditingPoem({id:'new'}); 
@@ -680,35 +693,75 @@
 
       const startRecording = async () => {
         try {
+          setFormError('');
           setShowLinkInput(false);
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error("Microphone API is not supported in this browser.");
+          }
+
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+          
           mediaRecorder.current = new MediaRecorder(stream);
           const chunks = [];
-          mediaRecorder.current.ondataavailable = (e) => chunks.push(e.data);
+          
+          mediaRecorder.current.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) chunks.push(e.data);
+          };
+          
           mediaRecorder.current.onstop = async () => {
-            const blob = new Blob(chunks, { type: 'audio/webm' });
+            clearInterval(timerRef.current);
+            setRecordingTime(0);
+            
+            const mimeType = mediaRecorder.current.mimeType || 'audio/webm';
+            const blob = new Blob(chunks, { type: mimeType });
             const b64 = await blobToBase64(blob);
-            setAudioData({ base64: b64, mimeType: 'audio/webm' });
+            setAudioData({ base64: b64, mimeType: mimeType });
             
             if (storage && user) {
               setUploading(true);
-              const path = `poetry_media/rec_${Date.now()}.webm`;
+              const ext = mimeType.includes('mp4') ? 'mp4' : mimeType.includes('ogg') ? 'ogg' : 'webm';
+              const path = `poetry_media/rec_${Date.now()}.${ext}`;
               const task = uploadBytesResumable(ref(storage, path), blob);
               task.on('state_changed', 
                 (s) => setProgress(Math.round((s.bytesTransferred / s.totalBytes) * 100)), 
-                (err) => { setFormError(err.message); setUploading(false); },
+                (err) => { setFormError("Upload error: " + err.message); setUploading(false); },
                 async () => { const url = await getDownloadURL(task.snapshot.ref); setFormData(p => ({ ...p, mediaUrl: url })); setUploading(false); }
               );
             }
           };
-          mediaRecorder.current.start();
+          
+          // Request data every second to prevent memory limits on mobile devices
+          mediaRecorder.current.start(1000); 
           setIsRecording(true);
+          setRecordingTime(0);
+          timerRef.current = setInterval(() => {
+             setRecordingTime(prev => prev + 1);
+          }, 1000);
+          
         } catch(e) { 
-          alert("Direct microphone access is restricted in this environment (e.g., inside Gemini Canvas or certain mobile browsers). \n\nPlease use the 'Device Record' or 'Upload File' buttons instead! \n\nError details: " + e.message); 
+          console.error("Mic error details:", e);
+          let errorMsg = e.message;
+          if (e.name === 'NotAllowedError' || e.message.includes('Permission denied')) {
+             errorMsg = "Permission denied. Please click the lock icon in your browser's URL bar and allow microphone access.";
+          } else if (e.name === 'NotFoundError') {
+             errorMsg = "No microphone found on this device.";
+          }
+          setFormError("Microphone error: " + errorMsg); 
         }
       };
 
-      const stopRecording = () => { if (mediaRecorder.current) { mediaRecorder.current.stop(); setIsRecording(false); } };
+      const stopRecording = () => { 
+        if (mediaRecorder.current) { 
+          mediaRecorder.current.stop(); 
+          setIsRecording(false); 
+          clearInterval(timerRef.current);
+          // Explicitly stop all tracks to release the microphone
+          if (mediaRecorder.current.stream) {
+              mediaRecorder.current.stream.getTracks().forEach(track => track.stop());
+          }
+        } 
+      };
 
       const handleTranscribe = async () => {
         if (!audioData) return setFormError("Upload or record audio first.");
@@ -734,8 +787,12 @@
       };
 
       const deletePoem = async (id) => {
-        if (window.confirm("Delete this poem?")) {
+        if (confirmDeleteId === id) {
           await deleteDoc(doc(db, 'poems', id));
+          setConfirmDeleteId(null);
+        } else {
+          setConfirmDeleteId(id);
+          setTimeout(() => setConfirmDeleteId(null), 3000);
         }
       };
 
@@ -782,13 +839,10 @@
                 <div className="bg-stone-50 p-6 md:p-8 rounded-3xl border border-stone-200">
                   <label className="block text-[10px] font-black uppercase text-stone-500 mb-6 tracking-widest">Audio & Media</label>
                   <div className="flex flex-wrap gap-3 mb-6">
-                    <button type="button" onClick={isRecording ? stopRecording : startRecording} className={`flex items-center gap-2 px-5 py-3 rounded-full font-black shadow-md transition text-xs uppercase tracking-widest ${isRecording ? 'bg-red-600 text-white animate-pulse' : 'bg-stone-900 text-white hover:bg-stone-800'}`} title="Uses browser microphone. May be blocked in some iframes.">
-                      {isRecording ? <StopCircle className="w-4 h-4" /> : <Mic className="w-4 h-4" />} {isRecording ? 'Stop' : 'Live Mic'}
+                    <button type="button" onClick={isRecording ? stopRecording : startRecording} className={`flex items-center gap-2 px-6 py-3 rounded-full font-black shadow-md transition text-xs uppercase tracking-widest ${isRecording ? 'bg-red-600 text-white animate-pulse' : 'bg-stone-900 text-white hover:bg-stone-800'}`}>
+                      {isRecording ? <StopCircle className="w-4 h-4" /> : <Mic className="w-4 h-4" />} 
+                      {isRecording ? `Stop Recording (${Math.floor(recordingTime/60)}:${(recordingTime%60).toString().padStart(2, '0')})` : 'Record Audio'}
                     </button>
-                    <label className="flex items-center gap-2 px-5 py-3 bg-white border border-stone-200 rounded-full cursor-pointer hover:border-amber-400 transition shadow-sm font-black text-stone-600 text-xs uppercase tracking-widest" title="Uses device's native voice recorder (Best for mobile and restricted browsers)">
-                      <Mic className="w-4 h-4" /> Device Record
-                      <input type="file" accept="audio/*,video/mp4,video/quicktime" capture="microphone" onChange={handleFile} className="hidden" />
-                    </label>
                     <label className="flex items-center gap-2 px-5 py-3 bg-white border border-stone-200 rounded-full cursor-pointer hover:border-amber-400 transition shadow-sm font-black text-stone-600 text-xs uppercase tracking-widest">
                       <Upload className="w-4 h-4" /> Upload File
                       <input type="file" accept="audio/*,video/mp4,video/quicktime" onChange={handleFile} className="hidden" />
@@ -874,7 +928,9 @@
                         <td className="p-6 text-right">
                           <div className="flex justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
                             <button onClick={() => handleEdit(p)} className="p-3 bg-white border border-stone-200 rounded-full hover:text-amber-600 hover:border-amber-300 shadow-sm transition"><Edit className="w-4 h-4"/></button>
-                            <button onClick={() => deletePoem(p.id)} className="p-3 bg-white border border-stone-200 rounded-full hover:text-red-600 hover:border-red-300 shadow-sm transition"><Trash2 className="w-4 h-4"/></button>
+                            <button onClick={() => deletePoem(p.id)} className={`p-3 bg-white border rounded-full shadow-sm transition ${confirmDeleteId === p.id ? 'text-red-600 border-red-500 bg-red-50' : 'border-stone-200 hover:text-red-600 hover:border-red-300'}`}>
+                              {confirmDeleteId === p.id ? <span className="text-[10px] font-black uppercase px-1">Sure?</span> : <Trash2 className="w-4 h-4"/>}
+                            </button>
                           </div>
                         </td>
                       </tr>
