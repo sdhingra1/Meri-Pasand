@@ -237,6 +237,7 @@
       const [searchQuery, setSearchQuery] = useState('');
       const [selectedPoet, setSelectedPoet] = useState('All');
       const [selectedType, setSelectedType] = useState('All');
+      const randomOrderRef = useRef({});
 
       const { uniquePoets, poetLabelMap } = useMemo(() => {
         const map = new Map();
@@ -286,6 +287,13 @@
       }, [poems]);
 
       const filteredPoems = useMemo(() => {
+        // Assign a stable random seed to each poem for this session to randomize the grid
+        poems.forEach(p => {
+            if (randomOrderRef.current[p.id] === undefined) {
+                randomOrderRef.current[p.id] = Math.random();
+            }
+        });
+
         return poems.filter(p => {
           const poetLabel = poetLabelMap.get(p.id) || 'Unknown';
           const matchesPoet = selectedPoet === 'All' || poetLabel === selectedPoet;
@@ -305,7 +313,7 @@
             (p.classificationHindi || '').toLowerCase().includes(q);
 
           return matchesPoet && matchesType && matchesSearch;
-        });
+        }).sort((a, b) => randomOrderRef.current[a.id] - randomOrderRef.current[b.id]);
       }, [poems, searchQuery, selectedPoet, selectedType, poetLabelMap, typeLabelMap]);
 
       return (
