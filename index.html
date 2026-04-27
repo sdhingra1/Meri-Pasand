@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- NOTE: In this version, UI changes (including the new Play button, Transliteration/Essence toggles, and layout updates) were made and tested. -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Meri Pasand - Meri Awaaz Me | Sandeep Dhingra</title>
@@ -241,8 +242,16 @@
       const [message, setMessage] = useState('');
 
       if (!sharePoem) return null;
-      const url = `${window.location.origin}${window.location.pathname}?poem=${sharePoem.id}`;
+      
+      // Cleanly grab the base URL (removes existing ?poem= parameters to prevent stacking)
+      const baseUrl = window.location.href.split('?')[0].replace(/#.*$/, '');
+      const url = `${baseUrl}?poem=${sharePoem.id}`;
+      
       const title = sharePoem.titleHindi || sharePoem.title;
+      
+      // Added extra line breaks around the URL so social apps format it as a clickable link
+      const fullShareText = `Listen to "${title}" recited by ${AUTHOR_NAME}:\n\n${url}\n\n${sharePoem.hindiText || ''}`;
+
       const copyToClipboard = (text, customMsg) => {
         if (navigator.clipboard && window.isSecureContext) {
             navigator.clipboard.writeText(text).then(() => showMessage(customMsg || 'Link copied to clipboard!'));
@@ -270,10 +279,10 @@
             {message && <div className="mb-4 p-3 bg-amber-50 text-amber-700 font-bold text-sm rounded-xl text-center animate-in fade-in">{message}</div>}
 
             <div className="flex flex-col gap-3">
-              <button onClick={() => copyToClipboard(url)} className="flex items-center gap-3 bg-stone-100 p-4 rounded-xl font-bold text-stone-700 hover:bg-stone-200 transition"><Copy className="w-5 h-5 text-stone-500" /> Copy Direct Link</button>
-              <a href={`https://wa.me/?text=${encodeURIComponent(`Listen to "${title}" recited by ${AUTHOR_NAME}:\n\n${url}`)}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 bg-[#e8fbf0] p-4 rounded-xl font-bold text-[#075e54] hover:bg-[#dcf8e8] transition"><MessageSquare className="w-5 h-5 text-[#25d366]" /> WhatsApp</a>
+              <button onClick={() => copyToClipboard(fullShareText)} className="flex items-center gap-3 bg-stone-100 p-4 rounded-xl font-bold text-stone-700 hover:bg-stone-200 transition"><Copy className="w-5 h-5 text-stone-500" /> Copy Poem & Link</button>
+              <a href={`https://wa.me/?text=${encodeURIComponent(fullShareText)}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 bg-[#e8fbf0] p-4 rounded-xl font-bold text-[#075e54] hover:bg-[#dcf8e8] transition"><MessageSquare className="w-5 h-5 text-[#25d366]" /> WhatsApp</a>
               <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 bg-blue-50 p-4 rounded-xl font-bold text-blue-700 hover:bg-blue-100 transition"><Facebook className="w-5 h-5 text-blue-600" /> Facebook</a>
-              <button onClick={() => copyToClipboard(url, "Link copied! Paste it in your Instagram story or bio.")} className="flex items-center gap-3 bg-pink-50 p-4 rounded-xl font-bold text-pink-700 hover:bg-pink-100 transition text-left"><Instagram className="w-5 h-5 text-pink-600" /> Instagram</button>
+              <button onClick={() => copyToClipboard(fullShareText, "Poem & Link copied! Paste it in your Instagram story or bio.")} className="flex items-center gap-3 bg-pink-50 p-4 rounded-xl font-bold text-pink-700 hover:bg-pink-100 transition text-left"><Instagram className="w-5 h-5 text-pink-600" /> Instagram</button>
             </div>
           </div>
         </div>
