@@ -81,7 +81,7 @@
     // ==========================================
     // ⚠️ SETTINGS & AUTHOR INFO
     // ==========================================
-    const apiKey = ""; // ⚠️ CANVAS PREVIEW KE LIYE ISE KHALI ("") RAKHNA ZAROORI HAI. Netlify par live karte waqt yahan apni key paste karein.
+    const apiKey = ""; // ⚠️ CANVAS PREVIEW KE LIYE ISE KHALI ("") RAKHNA ZAROORI HAI. Netlify par live main karte waqt yahan apni key paste karein.
     const getModelName = () => "gemini-2.5-flash-preview-09-2025";
     const AUTHOR_NAME = "Sandeep Dhingra"; 
 
@@ -289,12 +289,20 @@
 
           if (img.width && img.height) {
               const size = Math.min(img.width, img.height);
+              
+              // Shift the crop closer to the top (15% from top) to prevent cutting off the head
               const sx = (img.width - size) / 2;
-              const sy = (img.height - size) / 2;
-              ctx.drawImage(img, sx, sy, size, size, 0, 0, canvas.width, canvas.height);
+              const sy = (img.height - size) * 0.15; 
+
+              // Scale the image down by 15% (to 85% of canvas width) to create a beautiful framed border
+              const scaleFactor = 0.85;
+              const drawSize = canvas.width * scaleFactor;
+              const offset = (canvas.width - drawSize) / 2;
+
+              ctx.drawImage(img, sx, sy, size, size, offset, offset, drawSize, drawSize);
           }
 
-          // Dark gradient overlay to make text pop
+          // Dark gradient overlay to make text pop against the photo
           const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
           gradient.addColorStop(0, 'rgba(28, 25, 23, 0.4)'); // stone-900 transparent
           gradient.addColorStop(0.5, 'rgba(28, 25, 23, 0.85)');
