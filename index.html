@@ -370,7 +370,7 @@
 
       const showMessage = (msg) => {
         setMessage(msg);
-        setTimeout(() => setMessage(''), 3000);
+        setTimeout(() => setMessage(''), 5000); // Increased timeout so they can read longer instructions
       };
 
       const [generatingImage, setGeneratingImage] = useState(false);
@@ -381,7 +381,7 @@
             <button onClick={() => setSharePoem(null)} className="absolute top-4 right-4 p-2 text-stone-400 hover:bg-stone-100 rounded-full transition"><X className="w-5 h-5"/></button>
             <h3 className="text-2xl font-black text-stone-800 mb-6">Share Poem</h3>
             
-            {message && <div className="mb-4 p-3 bg-amber-50 text-amber-700 font-bold text-sm rounded-xl text-center animate-in fade-in">{message}</div>}
+            {message && <div className="mb-4 p-3 bg-amber-50 text-amber-700 font-bold text-sm rounded-xl text-center animate-in fade-in leading-relaxed">{message}</div>}
 
             <div className="flex flex-col gap-3">
               <button 
@@ -390,16 +390,17 @@
                 className="flex items-center gap-3 bg-indigo-50 p-4 rounded-xl font-bold text-indigo-700 hover:bg-indigo-100 transition text-left"
               >
                 {generatingImage ? <Loader2 className="w-5 h-5 animate-spin" /> : <ImageIcon className="w-5 h-5 text-indigo-600" />} 
-                {generatingImage ? 'Creating Image...' : 'Download Image for Facebook'}
+                {generatingImage ? 'Creating Image...' : 'Download Image (FB & Instagram)'}
               </button>
               
               <div className="border-t border-stone-100 my-2"></div>
               
-              <button onClick={() => copyToClipboard(fbShareText, "Details copied! Now paste them into your Facebook post.")} className="flex items-center gap-3 bg-blue-50 p-4 rounded-xl font-bold text-blue-700 hover:bg-blue-100 transition text-left"><Facebook className="w-5 h-5 text-blue-600" /> Copy Link & Info for Facebook</button>
-              <button onClick={() => copyToClipboard(fullShareText)} className="flex items-center gap-3 bg-stone-100 p-4 rounded-xl font-bold text-stone-700 hover:bg-stone-200 transition"><Copy className="w-5 h-5 text-stone-500" /> Copy Full Poem & Link</button>
+              <button onClick={() => copyToClipboard(fbShareText, "Copied! Paste this directly into your Facebook post along with the downloaded image.")} className="flex items-center gap-3 bg-blue-50 p-4 rounded-xl font-bold text-blue-700 hover:bg-blue-100 transition text-left"><Facebook className="w-5 h-5 text-blue-600" /> Copy Info for Facebook</button>
+              <button onClick={() => copyToClipboard(fullShareText, "Copied! Add the downloaded image to an IG Story with a 'Link' sticker, or paste the link in your bio.")} className="flex items-center gap-3 bg-pink-50 p-4 rounded-xl font-bold text-pink-700 hover:bg-pink-100 transition text-left"><Instagram className="w-5 h-5 text-pink-600" /> Copy Info for Instagram</button>
               
               <a href={`https://wa.me/?text=${encodeURIComponent(fullShareText)}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 bg-[#e8fbf0] p-4 rounded-xl font-bold text-[#075e54] hover:bg-[#dcf8e8] transition"><MessageSquare className="w-5 h-5 text-[#25d366]" /> WhatsApp</a>
-              <button onClick={() => copyToClipboard(fullShareText, "Poem & Link copied! Paste it in your Instagram story or bio.")} className="flex items-center gap-3 bg-pink-50 p-4 rounded-xl font-bold text-pink-700 hover:bg-pink-100 transition text-left"><Instagram className="w-5 h-5 text-pink-600" /> Instagram</button>
+              <button onClick={() => copyToClipboard(fullShareText)} className="flex items-center gap-3 bg-stone-100 p-4 rounded-xl font-bold text-stone-700 hover:bg-stone-200 transition text-left"><Copy className="w-5 h-5 text-stone-500" /> Copy Full Poem & Link</button>
+
             </div>
           </div>
         </div>
