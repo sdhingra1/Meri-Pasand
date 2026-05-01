@@ -1,10 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- NOTE: In this version, UI changes (including the new Play button, Transliteration/Essence toggles, and layout updates) were made and tested. -->
+  <!-- NOTE: In this version, UI changes (including the new Play button, Transliteration/Essence toggles, and layout updates) were made and tested. Also included poem text in share functionality. -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Meri Pasand - Meri Awaaz Me | Sandeep Dhingra</title>
+
+  <!-- Social Media Link Preview (Open Graph) Tags -->
+  <meta property="og:title" content="Meri Pasand - Meri Awaaz Me | Sandeep Dhingra" />
+  <meta property="og:description" content="Listen to beautiful Hindi poetry recitations by Sandeep Dhingra." />
+  <meta property="og:image" content="https://firebasestorage.googleapis.com/v0/b/meri-pasand-2a498.firebasestorage.app/o/Gemini_Generated_Image_98uz8k98uz8k98uz.png?alt=media" />
+  <meta property="og:url" content="https://meripasand.com/" />
+  <meta property="og:type" content="website" />
+  
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Meri Pasand - Meri Awaaz Me | Sandeep Dhingra" />
+  <meta name="twitter:description" content="Listen to beautiful Hindi poetry recitations by Sandeep Dhingra." />
+  <meta name="twitter:image" content="https://firebasestorage.googleapis.com/v0/b/meri-pasand-2a498.firebasestorage.app/o/Gemini_Generated_Image_98uz8k98uz8k98uz.png?alt=media" />
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -475,7 +487,14 @@
       useEffect(() => {
         setShowEssence(false);
         setShowTransliteration(false);
-      }, [selectedPoem]);
+        
+        // Dynamically update the browser tab title for better sharing
+        if (currentPoem) {
+            document.title = `${currentPoem.titleHindi || currentPoem.title} | Sandeep Dhingra`;
+        }
+        
+        return () => { document.title = "Meri Pasand - Meri Awaaz Me | Sandeep Dhingra"; };
+      }, [selectedPoem, currentPoem]);
 
       useEffect(() => {
         if (!user || !selectedPoem) return;
