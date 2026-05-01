@@ -8,14 +8,15 @@
   <!-- Social Media Link Preview (Open Graph) Tags -->
   <meta property="og:title" content="Meri Pasand - Meri Awaaz Me | Sandeep Dhingra" />
   <meta property="og:description" content="Listen to beautiful Hindi poetry recitations by Sandeep Dhingra." />
-  <meta property="og:image" content="https://firebasestorage.googleapis.com/v0/b/meri-pasand-2a498.firebasestorage.app/o/Gemini_Generated_Image_98uz8k98uz8k98uz.png?alt=media" />
+  <!-- Updated og:image to use an auto-padding proxy to prevent Facebook from cropping the head -->
+  <meta property="og:image" content="https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fmeri-pasand-2a498.firebasestorage.app%2Fo%2FGemini_Generated_Image_98uz8k98uz8k98uz.png%3Falt%3Dmedia&w=1200&h=630&fit=contain&cbg=1c1917" />
   <meta property="og:url" content="https://meripasand.com/" />
   <meta property="og:type" content="website" />
   
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Meri Pasand - Meri Awaaz Me | Sandeep Dhingra" />
   <meta name="twitter:description" content="Listen to beautiful Hindi poetry recitations by Sandeep Dhingra." />
-  <meta name="twitter:image" content="https://firebasestorage.googleapis.com/v0/b/meri-pasand-2a498.firebasestorage.app/o/Gemini_Generated_Image_98uz8k98uz8k98uz.png?alt=media" />
+  <meta name="twitter:image" content="https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fmeri-pasand-2a498.firebasestorage.app%2Fo%2FGemini_Generated_Image_98uz8k98uz8k98uz.png%3Falt%3Dmedia&w=1200&h=630&fit=contain&cbg=1c1917" />
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -679,23 +680,17 @@
                 
                 <p className="text-xl text-stone-500 font-serif italic mb-10">— Poet: {currentPoem.poetHindi || currentPoem.poet} —</p>
                 
-                {/* Audio Player */}
+                {/* Cinematic Audio Player */}
                 {currentPoem.mediaUrl && (
-                  <div className="max-w-4xl mx-auto py-8 text-center transform hover:scale-[1.02] transition duration-500">
-                     <div className="flex flex-col items-center justify-center gap-6 mb-8">
-                        <div className="relative shrink-0 inline-block">
-                           <img 
-                              src="https://firebasestorage.googleapis.com/v0/b/meri-pasand-2a498.firebasestorage.app/o/Gemini_Generated_Image_98uz8k98uz8k98uz.png?alt=media" 
-                              alt={AUTHOR_NAME} 
-                              className="w-[134px] h-[134px] md:w-[180px] md:h-[180px] rounded-full object-cover grayscale shadow-md"
-                              onError={(e) => { e.target.onerror = null; e.target.src = 'https://ui-avatars.com/api/?name=Sandeep+Dhingra&background=f59e0b&color=fff&size=256'; }}
-                           />
-                           <div className="absolute bottom-0 right-0 md:bottom-2 md:right-2 bg-stone-900 p-3 md:p-4 rounded-full shadow-lg transform hover:scale-110 transition duration-300">
-                              <Mic className="w-5 h-5 md:w-6 md:h-6 text-amber-500 animate-pulse" />
-                           </div>
-                        </div>
+                  <div className="max-w-4xl mx-auto bg-stone-900 p-8 md:p-10 rounded-[2rem] shadow-2xl border border-stone-800 relative overflow-hidden text-center transform hover:scale-[1.02] transition duration-500">
+                     <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500 rounded-bl-full opacity-10 blur-3xl"></div>
+                     <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-600 rounded-tr-full opacity-10 blur-3xl"></div>
+                     
+                     <div className="relative z-10 flex flex-col md:flex-row items-center justify-center gap-6 mb-8">
+                        <div className="w-16 h-16 bg-amber-500 rounded-full flex items-center justify-center shadow-lg shadow-amber-500/30 animate-pulse shrink-0"><Mic className="w-8 h-8 text-white" /></div>
+                        <div className="text-center md:text-left"><p className="text-amber-500 font-black text-[10px] tracking-[0.2em] uppercase mb-1">Recited By</p><p className="text-3xl md:text-4xl font-black text-white tracking-wide">{AUTHOR_NAME}</p></div>
                      </div>
-                     <div className="max-w-2xl mx-auto px-4">
+                     <div className="relative z-10 bg-white/10 p-2 rounded-full backdrop-blur-md border border-white/5">
                          <MediaRenderer url={currentPoem.mediaUrl} />
                      </div>
                   </div>
