@@ -253,7 +253,7 @@
     const ShareModal = ({ sharePoem, setSharePoem }) => {
       const [message, setMessage] = useState('');
       const [canNativeShare, setCanNativeShare] = useState(false);
-      const [generatingImage, setGeneratingImage] = useState(false);
+      const [generatingImage, setGeneratingImage] = useState(false); // FIXED: Moved to top level
 
       useEffect(() => {
         if (navigator.share) {
