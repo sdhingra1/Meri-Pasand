@@ -253,6 +253,7 @@
     const ShareModal = ({ sharePoem, setSharePoem }) => {
       const [message, setMessage] = useState('');
       const [canNativeShare, setCanNativeShare] = useState(false);
+      const [generatingImage, setGeneratingImage] = useState(false);
 
       useEffect(() => {
         if (navigator.share) {
@@ -372,8 +373,6 @@
         setMessage(msg);
         setTimeout(() => setMessage(''), 5000); // Increased timeout so they can read longer instructions
       };
-
-      const [generatingImage, setGeneratingImage] = useState(false);
 
       return (
         <div className="fixed inset-0 bg-stone-900/80 backdrop-blur-sm flex items-center justify-center p-6 z-50 animate-in fade-in">
