@@ -641,4 +641,600 @@
                 <div className="bg-stone-50/80 p-8 md:p-16 border-b border-stone-100 animate-in slide-in-from-top-4 fade-in duration-500 relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-32 h-32 bg-stone-200 rounded-br-full -ml-4 -mt-4 opacity-40"></div>
                     <div className="max-w-4xl mx-auto relative z-10 text-center">
-                        <h4 className="font-black
+                        <h4 className="font-black text-stone-500 text-2xl mb-6 flex items-center justify-center gap-3">
+                           <BookOpen className="w-6 h-6 text-stone-400"/> Roman Transliteration
+                        </h4>
+                        <div className="font-serif text-2xl md:text-3xl italic leading-loose text-stone-600 whitespace-pre-wrap">
+                           {currentPoem.romanText}
+                        </div>
+                    </div>
+                </div>
+             )}
+
+             {/* Expanded Essence Section */}
+             {showEssence && currentPoem.essence && (
+                <div className="bg-amber-50/50 p-8 md:p-16 border-b border-stone-100 animate-in slide-in-from-top-4 fade-in duration-500 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-100 rounded-bl-full -mr-4 -mt-4 opacity-50"></div>
+                    <div className="max-w-4xl mx-auto relative z-10">
+                        <h4 className="font-black text-amber-900 text-2xl mb-6 flex items-center gap-3">
+                           <Info className="w-6 h-6 text-amber-500"/> Core Essence
+                        </h4>
+                        <div className="font-serif text-xl leading-loose text-stone-700 whitespace-pre-wrap">
+                           {currentPoem.essence}
+                        </div>
+                    </div>
+                </div>
+             )}
+
+             <div className="flex flex-col md:flex-row">
+                 <div className="flex-1 p-8 md:p-16 relative bg-white">
+                    <h4 className="text-[10px] font-black uppercase text-amber-600 tracking-[0.2em] mb-10 border-b border-amber-100 pb-2 max-w-3xl mx-auto">
+                        Devanagari
+                    </h4>
+                    
+                    <div className="font-serif text-2xl md:text-3xl leading-loose whitespace-pre-wrap text-stone-800 text-center max-w-3xl mx-auto">
+                        {currentPoem.hindiText}
+                    </div>
+                 </div>
+                 
+                 {currentPoem.vocabulary && (
+                     <div className="w-full md:w-[300px] lg:w-[360px] shrink-0 bg-amber-50/30 p-8 md:p-12 border-t md:border-t-0 md:border-l border-stone-100">
+                        <div className="sticky top-28">
+                           <h4 className="font-black text-amber-900 text-xl mb-6 flex items-center gap-3 border-b border-amber-200/50 pb-3">
+                              <BookOpen className="w-5 h-5 text-amber-500"/> Glossary
+                           </h4>
+                           <div className="font-serif text-lg italic leading-relaxed text-stone-700 whitespace-pre-wrap">
+                              {currentPoem.vocabulary}
+                           </div>
+                        </div>
+                     </div>
+                 )}
+             </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-between items-center mb-12">
+            {prevPoem ? (
+              <button onClick={() => goToDetail(prevPoem)} className="flex items-center gap-4 bg-white border border-stone-200 px-6 py-4 rounded-2xl shadow-sm hover:shadow-md hover:border-amber-300 transition w-full sm:w-auto group">
+                 <ChevronLeft className="w-6 h-6 text-stone-400 group-hover:text-amber-500 transition shrink-0" />
+                 <div className="text-left">
+                   <div className="text-[10px] font-black uppercase text-stone-400 tracking-widest">Previous</div>
+                   <div className="font-serif font-bold text-stone-800 line-clamp-1">
+                      {prevPoem.titleHindi || prevPoem.title} 
+                      {prevPoem.title && prevPoem.titleHindi && prevPoem.title !== prevPoem.titleHindi && <span className="text-stone-400 font-sans font-normal ml-1">({prevPoem.title})</span>}
+                   </div>
+                 </div>
+              </button>
+            ) : <div className="hidden sm:block"></div>}
+            
+            {nextPoem ? (
+              <button onClick={() => goToDetail(nextPoem)} className="flex items-center gap-4 bg-white border border-stone-200 px-6 py-4 rounded-2xl shadow-sm hover:shadow-md hover:border-amber-300 transition w-full sm:w-auto group justify-end sm:text-right">
+                 <div className="text-right">
+                   <div className="text-[10px] font-black uppercase text-stone-400 tracking-widest">Next</div>
+                   <div className="font-serif font-bold text-stone-800 line-clamp-1">
+                      {nextPoem.titleHindi || nextPoem.title} 
+                      {nextPoem.title && nextPoem.titleHindi && nextPoem.title !== nextPoem.titleHindi && <span className="text-stone-400 font-sans font-normal ml-1">({nextPoem.title})</span>}
+                   </div>
+                 </div>
+                 <ChevronRight className="w-6 h-6 text-stone-400 group-hover:text-amber-500 transition shrink-0" />
+              </button>
+            ) : <div className="hidden sm:block"></div>}
+          </div>
+
+          <div className="max-w-4xl mx-auto bg-white rounded-[2.5rem] shadow-lg border border-stone-200 overflow-hidden">
+              <div className="p-10 md:p-12 border-b border-stone-100 bg-stone-50">
+                 <h3 className="text-3xl font-black text-stone-800 mb-2 flex items-center gap-3"><MessageSquare className="w-8 h-8 text-amber-500" /> Reader Reflections</h3>
+                 <p className="text-stone-500 font-medium">Leave a rating or share your thoughts about this composition.</p>
+              </div>
+
+              <div className="p-10 md:p-12">
+                 <form onSubmit={handleAddComment} className="mb-12 bg-stone-50 rounded-2xl p-6 md:p-8 border border-stone-200">
+                    <div className="mb-6 flex flex-col md:flex-row md:items-center gap-4 border-b border-stone-200 pb-6">
+                       <span className="font-bold text-stone-600 uppercase tracking-widest text-xs">Your Rating</span>
+                       <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                             <Star 
+                                key={star}
+                                className={`w-8 h-8 cursor-pointer transition-transform hover:scale-110 ${star <= (hoverRating || newRating) ? 'fill-amber-500 text-amber-500' : 'text-stone-300'}`}
+                                onMouseEnter={() => setHoverRating(star)}
+                                onMouseLeave={() => setHoverRating(0)}
+                                onClick={() => setNewRating(star)}
+                             />
+                          ))}
+                       </div>
+                    </div>
+                    
+                    <textarea
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="Write your review or reflection here..."
+                      className="w-full bg-white border border-stone-200 rounded-xl p-4 md:p-6 text-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition min-h-[120px] mb-4"
+                    />
+                    
+                    <div className="flex justify-end">
+                       <button 
+                          type="submit"
+                          disabled={submittingComment || (newRating === 0 && !newComment.trim())}
+                          className="bg-stone-900 text-white px-8 py-3 rounded-full font-bold uppercase tracking-widest text-xs hover:bg-stone-800 transition shadow-lg disabled:opacity-50 disabled:shadow-none"
+                       >
+                          {submittingComment ? 'Posting...' : 'Post Reflection'}
+                       </button>
+                    </div>
+                 </form>
+
+                 <div className="space-y-6">
+                    {comments.length === 0 ? (
+                       <div className="text-center py-10 px-4">
+                          <Star className="w-12 h-12 text-stone-200 mx-auto mb-4" />
+                          <p className="text-stone-400 font-bold uppercase tracking-widest text-sm">No reviews yet.</p>
+                          <p className="text-stone-400 mt-2 text-sm">Be the first to share your thoughts!</p>
+                       </div>
+                    ) : (
+                       comments.map(c => (
+                          <div key={c.id} className="bg-white p-6 md:p-8 rounded-2xl border border-stone-100 shadow-sm hover:shadow-md transition">
+                             <div className="flex justify-between items-start mb-4">
+                                <div>
+                                   <p className="font-black text-stone-800 text-sm">Reader • {c.userId.substring(0,6)}</p>
+                                   <p className="text-xs text-stone-400 mt-1 uppercase tracking-wider">{new Date(c.createdAt).toLocaleDateString()}</p>
+                                </div>
+                                {c.rating > 0 && (
+                                   <div className="flex gap-1">
+                                      {[...Array(5)].map((_, i) => (
+                                         <Star key={i} className={`w-4 h-4 ${i < c.rating ? 'fill-amber-500 text-amber-500' : 'text-stone-200'}`} />
+                                      ))}
+                                   </div>
+                                )}
+                             </div>
+                             {c.text && <p className="text-stone-600 text-lg leading-relaxed">{c.text}</p>}
+                          </div>
+                       ))
+                    )}
+                 </div>
+              </div>
+          </div>
+        </div>
+      );
+    };
+
+    const AdminDashboard = ({ poems, user }) => {
+      const [editingPoem, setEditingPoem] = useState(null);
+      const [formData, setFormData] = useState({});
+      const [aiProcessing, setAiProcessing] = useState(false);
+      const [uploading, setUploading] = useState(false);
+      const [progress, setProgress] = useState(0);
+      const [isRecording, setIsRecording] = useState(false);
+      const [showLinkInput, setShowLinkInput] = useState(false);
+      const [formError, setFormError] = useState('');
+      const [audioData, setAudioData] = useState(null);
+      const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+      const [recordingTime, setRecordingTime] = useState(0);
+
+      const mediaRecorder = useRef(null);
+      const timerRef = useRef(null);
+
+      const handleCreate = () => { 
+        setEditingPoem({id:'new'}); 
+        setFormData({title:'', titleHindi:'', poet:'', poetHindi:'', hindiText:'', romanText:'', vocabulary:'', essence:'', classification:'', classificationHindi:'', mediaUrl:'', rank:poems.length+1}); 
+        setFormError(''); setAudioData(null); setShowLinkInput(false);
+      };
+      
+      const handleEdit = (p) => {
+        setEditingPoem(p); setFormData({ ...p }); setFormError(''); setAudioData(null); 
+        setShowLinkInput(!!(p.mediaUrl && !p.mediaUrl.startsWith('https://firebasestorage')));
+      };
+
+      const typingTimeout = useRef(null);
+
+      const auto = async (type, val) => {
+        if (!val || !val.trim()) return;
+        setAiProcessing(true);
+        try {
+          if (type === 'title') { const res = await transliterateText(val, 'hindi'); setFormData(p => ({...p, titleHindi: res})); }
+          if (type === 'poet') { const res = await transliterateText(val, 'hindi'); setFormData(p => ({...p, poetHindi: p.poetHindi ? p.poetHindi : res})); }
+          if (type === 'poetHindi') { const res = await transliterateText(val, 'roman'); setFormData(p => ({...p, poet: p.poet ? p.poet : res})); }
+          if (type === 'essence') { const res = await extractPoemEssence(val); setFormData(p => ({...p, essence: res})); }
+          if (type === 'vocab') { const res = await extractUrduVocabulary(val); setFormData(p => ({...p, vocabulary: res})); }
+          if (type === 'class') { 
+            const res = await classifyPoem(val); 
+            setFormData(p => ({...p, classification: res}));
+            const resHindi = await transliterateText(res, 'hindi');
+            setFormData(p => ({...p, classificationHindi: p.classificationHindi ? p.classificationHindi : resHindi}));
+          }
+          if (type === 'classRoman') { const res = await transliterateText(val, 'hindi'); setFormData(p => ({...p, classificationHindi: p.classificationHindi ? p.classificationHindi : res})); }
+          if (type === 'classHindi') { const res = await transliterateText(val, 'roman'); setFormData(p => ({...p, classification: p.classification ? p.classification : res})); }
+          if (type === 'roman') { const res = await transliterateText(val, 'roman'); setFormData(p => ({...p, romanText: res})); }
+          if (type === 'hindi') { const res = await transliterateText(val, 'hindi'); setFormData(p => ({...p, hindiText: res})); }
+        } catch(e) { console.error(e); }
+        setAiProcessing(false);
+      };
+
+      const handleDebouncedAuto = (type, val) => {
+        if (typingTimeout.current) clearTimeout(typingTimeout.current);
+        typingTimeout.current = setTimeout(() => auto(type, val), 2000);
+      };
+
+      const blobToBase64 = (blob) => new Promise(resolve => {
+        const r = new FileReader(); r.onloadend = () => resolve(r.result); r.readAsDataURL(blob);
+      });
+
+      const handleFile = async (e) => {
+        const file = e.target.files[0];
+        if (!file || !user) return;
+        setUploading(true); setFormError(''); setShowLinkInput(false);
+        const b64 = await blobToBase64(file);
+        
+        // Mobile browsers might output video/mp4 when recording audio natively.
+        setAudioData({ base64: b64, mimeType: file.type || 'audio/mp3' });
+
+        if (storage) {
+          const safeName = file.name ? file.name.replace(/\s+/g, '_') : 'native_recording.mp4';
+          const fileName = `${Date.now()}_${safeName}`;
+          const path = `poetry_media/${fileName}`;
+          const sRef = ref(storage, path);
+          const task = uploadBytesResumable(sRef, file);
+          task.on('state_changed', 
+            (s) => setProgress(Math.round((s.bytesTransferred / s.totalBytes) * 100)),
+            (err) => { setFormError(`Upload failed: ${err.message}`); setUploading(false); },
+            async () => { const url = await getDownloadURL(task.snapshot.ref); setFormData(prev => ({ ...prev, mediaUrl: url })); setUploading(false); setProgress(0); }
+          );
+        } else { setFormError("Storage config missing."); setUploading(false); }
+        
+        // Reset the input value so the same file can be triggered again if needed
+        e.target.value = '';
+      };
+
+      const startRecording = async () => {
+        try {
+          setFormError('');
+          setShowLinkInput(false);
+          
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error("Microphone API is not supported in this browser.");
+          }
+
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+          
+          mediaRecorder.current = new MediaRecorder(stream);
+          const chunks = [];
+          
+          mediaRecorder.current.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) chunks.push(e.data);
+          };
+          
+          mediaRecorder.current.onstop = async () => {
+            clearInterval(timerRef.current);
+            setRecordingTime(0);
+            
+            const mimeType = mediaRecorder.current.mimeType || 'audio/webm';
+            const blob = new Blob(chunks, { type: mimeType });
+            const b64 = await blobToBase64(blob);
+            setAudioData({ base64: b64, mimeType: mimeType });
+            
+            if (storage && user) {
+              setUploading(true);
+              const ext = mimeType.includes('mp4') ? 'mp4' : mimeType.includes('ogg') ? 'ogg' : 'webm';
+              const path = `poetry_media/rec_${Date.now()}.${ext}`;
+              const task = uploadBytesResumable(ref(storage, path), blob);
+              task.on('state_changed', 
+                (s) => setProgress(Math.round((s.bytesTransferred / s.totalBytes) * 100)), 
+                (err) => { setFormError("Upload error: " + err.message); setUploading(false); },
+                async () => { const url = await getDownloadURL(task.snapshot.ref); setFormData(p => ({ ...p, mediaUrl: url })); setUploading(false); }
+              );
+            }
+          };
+          
+          // Request data every second to prevent memory limits on mobile devices
+          mediaRecorder.current.start(1000); 
+          setIsRecording(true);
+          setRecordingTime(0);
+          timerRef.current = setInterval(() => {
+             setRecordingTime(prev => prev + 1);
+          }, 1000);
+          
+        } catch(e) { 
+          console.error("Mic error details:", e);
+          let errorMsg = e.message;
+          if (e.name === 'NotAllowedError' || e.message.includes('Permission denied')) {
+             errorMsg = "Permission denied. Please click the lock icon in your browser's URL bar and allow microphone access.";
+          } else if (e.name === 'NotFoundError') {
+             errorMsg = "No microphone found on this device.";
+          }
+          setFormError("Microphone error: " + errorMsg); 
+        }
+      };
+
+      const stopRecording = () => { 
+        if (mediaRecorder.current) { 
+          mediaRecorder.current.stop(); 
+          setIsRecording(false); 
+          clearInterval(timerRef.current);
+          // Explicitly stop all tracks to release the microphone
+          if (mediaRecorder.current.stream) {
+              mediaRecorder.current.stream.getTracks().forEach(track => track.stop());
+          }
+        } 
+      };
+
+      const handleTranscribe = async () => {
+        if (!audioData) return setFormError("Upload or record audio first.");
+        setFormError(''); setAiProcessing(true);
+        const text = await transcribeAudio(audioData.base64, audioData.mimeType);
+        if (text) {
+          setFormData(p => ({ ...p, hindiText: text }));
+          const roman = await transliterateText(text, 'roman');
+          const vocab = await extractUrduVocabulary(text);
+          const essence = await extractPoemEssence(text);
+          const classification = await classifyPoem(text);
+          setFormData(prev => ({ ...prev, romanText: roman, vocabulary: vocab, essence: essence, classification: classification }));
+        } else { setFormError("Could not transcribe."); }
+        setAiProcessing(false);
+      };
+
+      const save = async (e) => {
+        e.preventDefault();
+        const col = collection(db, 'poems');
+        if (editingPoem.id === 'new') await addDoc(col, {...formData, createdAt: Date.now()});
+        else await updateDoc(doc(db, 'poems', editingPoem.id), {...formData, updatedAt: Date.now()});
+        setEditingPoem(null);
+      };
+
+      const deletePoem = async (id) => {
+        if (confirmDeleteId === id) {
+          await deleteDoc(doc(db, 'poems', id));
+          setConfirmDeleteId(null);
+        } else {
+          setConfirmDeleteId(id);
+          setTimeout(() => setConfirmDeleteId(null), 3000);
+        }
+      };
+
+      return (
+        <div className="max-w-7xl mx-auto p-4 md:p-8">
+          <div className={`mb-8 p-4 rounded-2xl flex items-center justify-between border shadow-sm ${user ? 'bg-green-50 text-green-700 border-green-100' : 'bg-red-50 text-red-700 border-red-100'}`}>
+            <div className="flex items-center gap-3 text-sm font-black tracking-widest uppercase">
+              {user ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+              {user ? `Database Connected: ${user.uid.substring(0,8)}` : 'Waiting for Authentication...'}
+            </div>
+          </div>
+
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6 mb-10">
+            <h2 className="text-4xl font-serif font-black text-stone-800">Admin Dashboard</h2>
+            {!editingPoem && <button onClick={handleCreate} className="bg-amber-600 text-white px-8 py-4 rounded-full font-bold shadow-xl hover:-translate-y-1 transition flex items-center gap-2 uppercase tracking-widest text-xs"><Plus className="w-4 h-4" /> Add New</button>}
+          </div>
+          
+          {editingPoem ? (
+            <div className="bg-white p-6 md:p-12 rounded-[2.5rem] shadow-2xl relative border border-stone-200">
+              {aiProcessing && <div className="absolute inset-0 bg-white/80 z-20 flex flex-col items-center justify-center backdrop-blur-sm rounded-[2.5rem]"><Loader2 className="animate-spin w-12 h-12 text-amber-600 mb-4" /><p className="font-bold text-amber-600 tracking-widest uppercase text-xs">AI is working...</p></div>}
+              
+              <div className="flex justify-between items-center mb-8 border-b pb-4">
+                <h3 className="font-black text-2xl">{editingPoem.id === 'new' ? 'New Composition' : 'Edit Composition'}</h3>
+                <button onClick={() => setEditingPoem(null)} className="p-2 bg-stone-100 rounded-full hover:bg-stone-200 transition"><X className="w-5 h-5 text-stone-500" /></button>
+              </div>
+              
+              {formError && <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6 text-sm border border-red-200 font-bold flex items-center gap-2"><AlertCircle className="w-5 h-5"/> {formError}</div>}
+
+              <form onSubmit={save} className="space-y-8">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                     <label className="text-[10px] font-black uppercase text-stone-400 block ml-1">Title (Roman) to Auto Hindi</label>
+                     <input value={formData.title || ''} onChange={e => { const val = e.target.value; setFormData({...formData, title: val}); handleDebouncedAuto('title', val); }} placeholder="Type Title (Roman)..." className="w-full border-b-2 p-3 outline-none focus:border-amber-500 transition" />
+                     <input value={formData.titleHindi || ''} onChange={e => setFormData({...formData, titleHindi: e.target.value})} placeholder="शीर्षक (Hindi)..." className="w-full border-b-2 p-3 outline-none bg-stone-50 font-serif text-lg rounded-t-lg" />
+                  </div>
+                  <div className="space-y-2">
+                     <label className="text-[10px] font-black uppercase text-stone-400 block ml-1">Poet (Roman) to Auto Hindi</label>
+                     <input value={formData.poet || ''} onChange={e => { const val = e.target.value; setFormData({...formData, poet: val}); handleDebouncedAuto('poet', val); }} placeholder="Type Poet (Roman)..." className="w-full border-b-2 p-3 outline-none focus:border-amber-500 transition" />
+                     <input value={formData.poetHindi || ''} onChange={e => setFormData({...formData, poetHindi: e.target.value})} placeholder="कवि (Hindi)..." className="w-full border-b-2 p-3 outline-none bg-stone-50 font-serif rounded-t-lg" />
+                  </div>
+                </div>
+
+                {/* Media Section */}
+                <div className="bg-stone-50 p-6 md:p-8 rounded-3xl border border-stone-200">
+                  <label className="block text-[10px] font-black uppercase text-stone-500 mb-6 tracking-widest">Audio & Media</label>
+                  <div className="flex flex-wrap gap-3 mb-6">
+                    <button type="button" onClick={isRecording ? stopRecording : startRecording} className={`flex items-center gap-2 px-6 py-3 rounded-full font-black shadow-md transition text-xs uppercase tracking-widest ${isRecording ? 'bg-red-600 text-white animate-pulse' : 'bg-stone-900 text-white hover:bg-stone-800'}`}>
+                      {isRecording ? <StopCircle className="w-4 h-4" /> : <Mic className="w-4 h-4" />} 
+                      {isRecording ? `Stop Recording (${Math.floor(recordingTime/60)}:${(recordingTime%60).toString().padStart(2, '0')})` : 'Record Audio'}
+                    </button>
+                    <label className="flex items-center gap-2 px-5 py-3 bg-white border border-stone-200 rounded-full cursor-pointer hover:border-amber-400 transition shadow-sm font-black text-stone-600 text-xs uppercase tracking-widest">
+                      <Upload className="w-4 h-4" /> Upload File
+                      <input type="file" accept="audio/*,video/mp4,video/quicktime" onChange={handleFile} className="hidden" />
+                    </label>
+                    <button type="button" onClick={() => setShowLinkInput(!showLinkInput)} className={`flex items-center gap-2 px-5 py-3 border rounded-full cursor-pointer transition shadow-sm font-black text-xs uppercase tracking-widest ${showLinkInput ? 'bg-amber-50 border-amber-300 text-amber-700' : 'bg-white border-stone-200 text-stone-600 hover:border-amber-400'}`}>
+                      <LinkIcon className="w-4 h-4" /> Paste Link
+                    </button>
+                  </div>
+                  {showLinkInput && (
+                    <input type="url" placeholder="https://youtube.com/..." value={formData.mediaUrl || ''} onChange={(e) => { setFormData(prev => ({ ...prev, mediaUrl: e.target.value })); setAudioData(null); }} className="w-full border p-3 rounded-xl outline-none focus:border-amber-500 mb-4" />
+                  )}
+                  {uploading && <div className="mb-4"><div className="flex justify-between text-xs font-bold text-amber-600 mb-1"><span>Uploading...</span><span>{progress}%</span></div><div className="h-2 bg-stone-200 rounded-full overflow-hidden"><div className="h-full bg-amber-500 transition-all" style={{width: `${progress}%`}}></div></div></div>}
+                  {formData.mediaUrl && (
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-100 flex flex-col gap-4">
+                      <MediaRenderer url={formData.mediaUrl} />
+                      <div className="flex flex-wrap gap-3">
+                        <button type="button" onClick={handleTranscribe} disabled={aiProcessing || !audioData} className="bg-amber-100 text-amber-900 px-4 py-2 rounded-full flex items-center gap-2 text-xs font-black uppercase tracking-widest hover:bg-amber-200 transition disabled:opacity-50">
+                          {aiProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />} Auto-Transcribe Audio
+                        </button>
+                        <button type="button" onClick={() => { setFormData(p => ({...p, mediaUrl: ''})); setAudioData(null); }} className="text-red-500 hover:bg-red-50 px-4 py-2 rounded-full text-xs font-bold transition">Remove Media</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                     <label className="text-[10px] font-black uppercase text-amber-600 tracking-widest ml-1">Hindi Text</label>
+                     <textarea rows="8" value={formData.hindiText || ''} onChange={e => { const val = e.target.value; setFormData({...formData, hindiText: val}); handleDebouncedAuto('roman', val); }} placeholder="Hindi Text (Auto-generates Roman)..." className="w-full border p-6 rounded-2xl font-serif text-xl outline-none focus:border-amber-500 transition" />
+                  </div>
+                  <div className="space-y-2">
+                     <label className="text-[10px] font-black uppercase text-stone-400 tracking-widest ml-1">Roman Transliteration</label>
+                     <textarea rows="8" value={formData.romanText || ''} onChange={e => { const val = e.target.value; setFormData({...formData, romanText: val}); handleDebouncedAuto('hindi', val); }} placeholder="Roman Text (Auto-generates Hindi)..." className="w-full border p-6 rounded-2xl font-serif text-xl italic bg-stone-50 outline-none focus:border-stone-400 transition" />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                     <div className="flex justify-between"><label className="text-[10px] font-black uppercase text-stone-400 tracking-widest">Essence & Meaning</label> <button type="button" onClick={() => auto('essence', formData.hindiText)} className="text-[10px] font-bold bg-amber-50 text-amber-700 px-3 py-1 rounded-full uppercase tracking-widest">Auto Generate</button></div>
+                     <textarea rows="4" value={formData.essence || ''} onChange={e => setFormData({...formData, essence: e.target.value})} placeholder="Summary..." className="w-full border p-5 rounded-2xl text-sm outline-none focus:border-amber-500" />
+                  </div>
+                  <div className="space-y-2">
+                     <div className="flex justify-between"><label className="text-[10px] font-black uppercase text-stone-400 tracking-widest">Urdu Glossary</label> <button type="button" onClick={() => auto('vocab', formData.hindiText)} className="text-[10px] font-bold bg-amber-50 text-amber-700 px-3 py-1 rounded-full uppercase tracking-widest">Auto Extract</button></div>
+                     <textarea rows="4" value={formData.vocabulary || ''} onChange={e => setFormData({...formData, vocabulary: e.target.value})} placeholder="Word - Meaning..." className="w-full border p-5 rounded-2xl text-sm outline-none focus:border-amber-500" />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                     <div className="flex justify-between"><label className="text-[10px] font-black uppercase text-stone-400 tracking-widest">Classification (Roman ⇄ Hindi)</label> <button type="button" onClick={() => auto('class', formData.hindiText)} className="text-[10px] font-bold bg-amber-50 text-amber-700 px-3 py-1 rounded-full uppercase tracking-widest">Auto Detect</button></div>
+                     <input value={formData.classification || ''} onChange={e => { const val = e.target.value; setFormData({...formData, classification: val}); handleDebouncedAuto('classRoman', val); }} placeholder="e.g. Ghazal (Roman)..." className="w-full border-b-2 p-3 outline-none focus:border-amber-500 transition" />
+                     <input value={formData.classificationHindi || ''} onChange={e => { const val = e.target.value; setFormData({...formData, classificationHindi: val}); handleDebouncedAuto('classHindi', val); }} placeholder="उदा. ग़ज़ल (Hindi)..." className="w-full border-b-2 p-3 outline-none bg-stone-50 font-serif rounded-t-lg mt-2" />
+                  </div>
+                  <div className="space-y-2">
+                     <label className="text-[10px] font-black uppercase text-stone-400 tracking-widest block ml-1">Sort Rank</label>
+                     <input type="number" placeholder="Rank (e.g. 1)" value={formData.rank || ''} onChange={e => setFormData({...formData, rank: e.target.value})} className="w-full border-b-2 p-3 outline-none focus:border-amber-500 text-lg" />
+                  </div>
+                </div>
+
+                <div className="flex gap-4 pt-6 border-t border-stone-100">
+                  <button className="flex-grow bg-stone-900 text-white py-5 rounded-2xl font-black uppercase tracking-[0.2em] hover:bg-stone-800 transition shadow-xl hover:-translate-y-1">Publish Composition</button>
+                  <button type="button" onClick={() => setEditingPoem(null)} className="bg-stone-100 px-8 py-5 rounded-2xl font-bold uppercase tracking-widest text-stone-500 hover:bg-stone-200 transition">Cancel</button>
+                </div>
+              </form>
+            </div>
+          ) : (
+            <div className="bg-white rounded-[2.5rem] shadow-xl overflow-hidden border border-stone-200">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="bg-stone-50 border-b border-stone-100">
+                    <tr className="text-[10px] font-black uppercase text-stone-400 tracking-widest">
+                       <th className="p-6">Rank</th><th className="p-6">Composition</th><th className="p-6">Form</th><th className="p-6 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100">
+                    {poems.length === 0 ? (
+                      <tr><td colSpan="4" className="p-20 text-center text-stone-400 italic font-serif text-xl">No poems found. Add some compositions!</td></tr>
+                    ) : poems.map(p => (
+                      <tr key={p.id} className="hover:bg-stone-50 transition group">
+                        <td className="p-6 font-bold text-stone-400">{p.rank}</td>
+                        <td className="p-6">
+                           <div className="font-serif font-bold text-xl text-stone-800">
+                              {p.titleHindi || p.title} 
+                              {p.title && p.titleHindi && p.title !== p.titleHindi && <span className="text-stone-400 text-sm font-sans font-normal ml-2">/ {p.title}</span>}
+                           </div>
+                           <div className="text-xs font-bold text-stone-400 uppercase tracking-widest mt-1">By {formatLabel(p.poet, p.poetHindi)}</div>
+                        </td>
+                        <td className="p-6"><span className="text-[10px] font-black bg-amber-50 text-amber-700 px-3 py-1.5 rounded-full uppercase tracking-widest">{formatLabel(p.classification, p.classificationHindi)}</span></td>
+                        <td className="p-6 text-right">
+                          <div className="flex justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => handleEdit(p)} className="p-3 bg-white border border-stone-200 rounded-full hover:text-amber-600 hover:border-amber-300 shadow-sm transition"><Edit className="w-4 h-4"/></button>
+                            <button onClick={() => deletePoem(p.id)} className={`p-3 bg-white border rounded-full shadow-sm transition ${confirmDeleteId === p.id ? 'text-red-600 border-red-500 bg-red-50' : 'border-stone-200 hover:text-red-600 hover:border-red-300'}`}>
+                              {confirmDeleteId === p.id ? <span className="text-[10px] font-black uppercase px-1">Sure?</span> : <Trash2 className="w-4 h-4"/>}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    function App() {
+      const [user, setUser] = useState(null);
+      const [isAdmin, setIsAdmin] = useState(false);
+      const [view, setView] = useState('home');
+      const [poems, setPoems] = useState([]);
+      const [selectedPoem, setSelectedPoem] = useState(null);
+      const [loading, setLoading] = useState(true);
+      const [showAdminLogin, setShowAdminLogin] = useState(false);
+      const [adminPassword, setAdminPassword] = useState('');
+      const [loginError, setLoginError] = useState('');
+      const [sharePoem, setSharePoem] = useState(null);
+
+      useEffect(() => {
+        const initAuth = async () => {
+          try {
+            await signInAnonymously(auth);
+          } catch (err) {
+            console.error("Auth failed:", err);
+          }
+        };
+        initAuth();
+        const unsubscribe = onAuthStateChanged(auth, (u) => { setUser(u); setLoading(false); });
+        return () => unsubscribe();
+      }, []);
+
+      useEffect(() => {
+        if (!user) return;
+        const poemsRef = collection(db, 'poems');
+        return onSnapshot(poemsRef, (snap) => {
+          const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setPoems(data.sort((a, b) => (a.rank || 0) - (b.rank || 0)));
+        }, (err) => console.error("Firestore error:", err));
+      }, [user]);
+
+      // Deep Linking
+      useEffect(() => {
+        if (poems.length > 0 && view === 'home') {
+          const params = new URLSearchParams(window.location.search);
+          const pid = params.get('poem');
+          if (pid) {
+            const p = poems.find(x => x.id === pid);
+            if (p) { setSelectedPoem(p); setView('detail'); }
+          }
+        }
+      }, [poems]);
+
+      const goHome = () => { setView('home'); setSelectedPoem(null); window.history.pushState({}, '', window.location.pathname); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+      const goToDetail = (p) => { setSelectedPoem(p); setView('detail'); window.history.pushState({}, '', `?poem=${p.id}`); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+
+      const handleAdminLogin = (e) => {
+        e.preventDefault();
+        if (adminPassword === 'kavi123') { setIsAdmin(true); setShowAdminLogin(false); setAdminPassword(''); setView('admin'); }
+        else { setLoginError('Incorrect password'); }
+      };
+
+      return (
+        <div className="min-h-screen bg-stone-50 selection:bg-amber-200">
+          {loading ? (
+            <div className="h-screen flex flex-col items-center justify-center bg-stone-50 gap-6">
+              <div className="w-20 h-20 border-4 border-stone-200 border-t-amber-500 rounded-full animate-spin"></div>
+              <p className="font-serif italic text-stone-400 text-xl animate-pulse">Loading Library...</p>
+            </div>
+          ) : (
+            <>
+              <Header goHome={goHome} isAdmin={isAdmin} setView={setView} view={view} setShowAdminLogin={setShowAdminLogin} />
+              <main className="pb-32">
+                {view === 'home' && <HomeView poems={poems} goToDetail={goToDetail} setSharePoem={setSharePoem} />}
+                {view === 'detail' && <PoemDetailView selectedPoem={selectedPoem} poems={poems} goHome={goHome} goToDetail={goToDetail} setSharePoem={setSharePoem} user={user} />}
+                {view === 'admin' && isAdmin && <AdminDashboard poems={poems} user={user} />}
+              </main>
+              
+              <ShareModal sharePoem={sharePoem} setSharePoem={setSharePoem} />
+              
+              {showAdminLogin && (
+                <div className="fixed inset-0 bg-stone-900/90 backdrop-blur-xl flex items-center justify-center p-6 z-50 animate-in fade-in">
+                  <div className="bg-white p-12 rounded-[3rem] shadow-2xl w-full max-w-md text-center border border-stone-200">
+                    <h2 className="text-3xl font-black mb-8 uppercase tracking-tight text-stone-800">Author Access</h2>
+                    <form onSubmit={handleAdminLogin} className="space-y-6">
+                      <input type="password" value={adminPassword} onChange={e => setAdminPassword(e.target.value)} placeholder="Secret Key" className="w-full border-b-4 border-stone-100 p-4 outline-none focus:border-amber-500 text-2xl font-bold text-center transition" autoFocus />
+                      {loginError && <p className="text-red-500 text-xs font-black uppercase tracking-widest">{loginError}</p>}
+                      <button className="w-full bg-stone-900 text-white py-6 rounded-[1.5rem] font-black uppercase tracking-widest hover:bg-black transition shadow-xl">Enter Library</button>
+                    </form>
+                    <button onClick={() => setShowAdminLogin(false)} className="mt-8 text-stone-400 hover:text-stone-600 font-bold uppercase text-[10px] tracking-widest transition">Cancel</button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      );
+    }
+
+    const root = createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
