@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- NOTE: In this version, UI changes (including the new Play button, Transliteration/Essence toggles, and layout updates) were made and tested. Also included poem text in share functionality. -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Meri Pasand - Meri Awaaz Me | Sandeep Dhingra</title>
@@ -44,7 +43,7 @@
       Save, X, Headphones, List, Mic, StopCircle, Upload, 
       Loader2, Wand2, CheckCircle, AlertCircle, Info, 
       ExternalLink, Link as LinkIcon, Search, Filter, Star,
-      Share2, Copy, Facebook, Instagram
+      Share2, Copy, Facebook, Instagram, Image as ImageIcon
     } from 'https://esm.sh/lucide-react@0.263.1';
     
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
@@ -252,17 +251,92 @@
 
     const ShareModal = ({ sharePoem, setSharePoem }) => {
       const [message, setMessage] = useState('');
+      const [generatingImage, setGeneratingImage] = useState(false);
 
       if (!sharePoem) return null;
       
-      // Cleanly grab the base URL (removes existing ?poem= parameters to prevent stacking)
       const baseUrl = window.location.href.split('?')[0].replace(/#.*$/, '');
       const url = `${baseUrl}?poem=${sharePoem.id}`;
       
       const title = sharePoem.titleHindi || sharePoem.title;
-      
-      // Added extra line breaks around the URL so social apps format it as a clickable link
       const fullShareText = `Listen to "${title}" recited by ${AUTHOR_NAME}:\n\n${url}\n\n${sharePoem.hindiText || ''}`;
+
+      const generateImageCard = async () => {
+        setGeneratingImage(true);
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = 1080;
+          canvas.height = 1080;
+          const ctx = canvas.getContext('2d');
+
+          // Fill base color
+          ctx.fillStyle = '#1c1917';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          // Load profile image
+          const img = new Image();
+          img.crossOrigin = "Anonymous";
+          // Add cache-breaker to help bypass strict CORS caching issues
+          img.src = "https://firebasestorage.googleapis.com/v0/b/meri-pasand-2a498.firebasestorage.app/o/Gemini_Generated_Image_98uz8k98uz8k98uz.png?alt=media&cb=" + Date.now();
+          
+          await new Promise((resolve) => {
+              img.onload = resolve;
+              img.onerror = () => {
+                  console.warn("Image load failed due to CORS, proceeding with dark background.");
+                  resolve();
+              };
+          });
+
+          if (img.width && img.height) {
+              const size = Math.min(img.width, img.height);
+              const sx = (img.width - size) / 2;
+              const sy = (img.height - size) / 2;
+              ctx.drawImage(img, sx, sy, size, size, 0, 0, canvas.width, canvas.height);
+          }
+
+          // Dark gradient overlay to make text pop
+          const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+          gradient.addColorStop(0, 'rgba(28, 25, 23, 0.4)'); // stone-900 transparent
+          gradient.addColorStop(0.5, 'rgba(28, 25, 23, 0.85)');
+          gradient.addColorStop(1, 'rgba(28, 25, 23, 1)');
+          ctx.fillStyle = gradient;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          // Draw Text
+          const lines = (sharePoem.hindiText || '').split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+          ctx.textAlign = 'center';
+          
+          // Title
+          ctx.fillStyle = '#f59e0b'; // amber-500
+          ctx.font = 'bold 70px serif';
+          ctx.fillText(title, canvas.width / 2, 380);
+
+          // Hindi Lines (First 3 lines max)
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'italic 45px serif';
+          if (lines.length > 0) ctx.fillText(lines[0], canvas.width / 2, 530);
+          if (lines.length > 1) ctx.fillText(lines[1], canvas.width / 2, 610);
+          if (lines.length > 2) ctx.fillText(lines[2], canvas.width / 2, 690);
+
+          // Branding footer
+          ctx.fillStyle = '#a8a29e'; // stone-400
+          ctx.font = '30px sans-serif';
+          ctx.fillText(`Recited by ${AUTHOR_NAME}`, canvas.width / 2, 950);
+
+          // Trigger Download
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+          const link = document.createElement('a');
+          link.download = `Meri_Pasand_${title}.jpg`;
+          link.href = dataUrl;
+          link.click();
+          showMessage('Image generated and downloaded!');
+        } catch (error) {
+          console.error(error);
+          showMessage('Could not generate image. Check browser security settings.');
+        }
+        setGeneratingImage(false);
+      };
 
       const copyToClipboard = (text, customMsg) => {
         if (navigator.clipboard && window.isSecureContext) {
@@ -291,9 +365,20 @@
             {message && <div className="mb-4 p-3 bg-amber-50 text-amber-700 font-bold text-sm rounded-xl text-center animate-in fade-in">{message}</div>}
 
             <div className="flex flex-col gap-3">
+              <button 
+                onClick={generateImageCard} 
+                disabled={generatingImage}
+                className="flex items-center gap-3 bg-indigo-50 p-4 rounded-xl font-bold text-indigo-700 hover:bg-indigo-100 transition text-left"
+              >
+                {generatingImage ? <Loader2 className="w-5 h-5 animate-spin" /> : <ImageIcon className="w-5 h-5 text-indigo-600" />} 
+                {generatingImage ? 'Creating Image...' : 'Download Image for Facebook'}
+              </button>
+              
+              <div className="border-t border-stone-100 my-2"></div>
+              
               <button onClick={() => copyToClipboard(fullShareText)} className="flex items-center gap-3 bg-stone-100 p-4 rounded-xl font-bold text-stone-700 hover:bg-stone-200 transition"><Copy className="w-5 h-5 text-stone-500" /> Copy Poem & Link</button>
               <a href={`https://wa.me/?text=${encodeURIComponent(fullShareText)}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 bg-[#e8fbf0] p-4 rounded-xl font-bold text-[#075e54] hover:bg-[#dcf8e8] transition"><MessageSquare className="w-5 h-5 text-[#25d366]" /> WhatsApp</a>
-              <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 bg-blue-50 p-4 rounded-xl font-bold text-blue-700 hover:bg-blue-100 transition"><Facebook className="w-5 h-5 text-blue-600" /> Facebook</a>
+              <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 bg-blue-50 p-4 rounded-xl font-bold text-blue-700 hover:bg-blue-100 transition"><Facebook className="w-5 h-5 text-blue-600" /> Share Link on Facebook</a>
               <button onClick={() => copyToClipboard(fullShareText, "Poem & Link copied! Paste it in your Instagram story or bio.")} className="flex items-center gap-3 bg-pink-50 p-4 rounded-xl font-bold text-pink-700 hover:bg-pink-100 transition text-left"><Instagram className="w-5 h-5 text-pink-600" /> Instagram</button>
             </div>
           </div>
@@ -488,9 +573,26 @@
         setShowEssence(false);
         setShowTransliteration(false);
         
-        // Dynamically update the browser tab title for better sharing
+        // Dynamically update the browser tab title and Open Graph meta tags for better sharing
         if (currentPoem) {
-            document.title = `${currentPoem.titleHindi || currentPoem.title} | Sandeep Dhingra`;
+            const poemTitle = currentPoem.titleHindi || currentPoem.title;
+            const fullTitle = `${poemTitle} | Sandeep Dhingra`;
+            document.title = fullTitle;
+            
+            // Generate a description string from the first 2 lines
+            const lines = (currentPoem.hindiText || '').split('\n').map(l => l.trim()).filter(l => l);
+            const desc = lines.length > 0 ? lines.slice(0, 2).join(' | ') + '...' : "Listen to beautiful Hindi poetry recitations.";
+
+            // Helper to update head tags dynamically
+            const setMeta = (name, content) => {
+                let el = document.querySelector(`meta[property="${name}"]`) || document.querySelector(`meta[name="${name}"]`);
+                if (el) el.setAttribute('content', content);
+            };
+
+            setMeta('og:title', fullTitle);
+            setMeta('twitter:title', fullTitle);
+            setMeta('og:description', desc);
+            setMeta('twitter:description', desc);
         }
         
         return () => { document.title = "Meri Pasand - Meri Awaaz Me | Sandeep Dhingra"; };
