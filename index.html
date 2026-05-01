@@ -252,7 +252,13 @@
 
     const ShareModal = ({ sharePoem, setSharePoem }) => {
       const [message, setMessage] = useState('');
-      const [generatingImage, setGeneratingImage] = useState(false);
+      const [canNativeShare, setCanNativeShare] = useState(false);
+
+      useEffect(() => {
+        if (navigator.share) {
+            setCanNativeShare(true);
+        }
+      }, []);
 
       if (!sharePoem) return null;
       
@@ -260,7 +266,13 @@
       const url = `${baseUrl}?poem=${sharePoem.id}`;
       
       const title = sharePoem.titleHindi || sharePoem.title;
+      const poetName = sharePoem.poetHindi || sharePoem.poet || "Unknown";
+
+      // Text formats for different sharing methods
       const fullShareText = `Listen to "${title}" recited by ${AUTHOR_NAME}:\n\n${url}\n\n${sharePoem.hindiText || ''}`;
+      
+      // Facebook-specific copy text (Poem Title, Poet Name, Reciter, and URL)
+      const fbShareText = `"${title}"\nPoet: ${poetName}\nRecited by ${AUTHOR_NAME}\n\n${url}`;
 
       const generateImageCard = async () => {
         setGeneratingImage(true);
@@ -312,8 +324,6 @@
           ctx.fillRect(0, 0, canvas.width, canvas.height);
 
           // Draw Text
-          const poetName = sharePoem.poetHindi || sharePoem.poet || "Unknown";
-
           ctx.textAlign = 'center';
           
           // Title
@@ -363,6 +373,8 @@
         setTimeout(() => setMessage(''), 3000);
       };
 
+      const [generatingImage, setGeneratingImage] = useState(false);
+
       return (
         <div className="fixed inset-0 bg-stone-900/80 backdrop-blur-sm flex items-center justify-center p-6 z-50 animate-in fade-in">
           <div className="bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-sm relative">
@@ -383,9 +395,10 @@
               
               <div className="border-t border-stone-100 my-2"></div>
               
-              <button onClick={() => copyToClipboard(fullShareText)} className="flex items-center gap-3 bg-stone-100 p-4 rounded-xl font-bold text-stone-700 hover:bg-stone-200 transition"><Copy className="w-5 h-5 text-stone-500" /> Copy Poem & Link</button>
+              <button onClick={() => copyToClipboard(fbShareText, "Details copied! Now paste them into your Facebook post.")} className="flex items-center gap-3 bg-blue-50 p-4 rounded-xl font-bold text-blue-700 hover:bg-blue-100 transition text-left"><Facebook className="w-5 h-5 text-blue-600" /> Copy Link & Info for Facebook</button>
+              <button onClick={() => copyToClipboard(fullShareText)} className="flex items-center gap-3 bg-stone-100 p-4 rounded-xl font-bold text-stone-700 hover:bg-stone-200 transition"><Copy className="w-5 h-5 text-stone-500" /> Copy Full Poem & Link</button>
+              
               <a href={`https://wa.me/?text=${encodeURIComponent(fullShareText)}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 bg-[#e8fbf0] p-4 rounded-xl font-bold text-[#075e54] hover:bg-[#dcf8e8] transition"><MessageSquare className="w-5 h-5 text-[#25d366]" /> WhatsApp</a>
-              <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 bg-blue-50 p-4 rounded-xl font-bold text-blue-700 hover:bg-blue-100 transition"><Facebook className="w-5 h-5 text-blue-600" /> Share Link on Facebook</a>
               <button onClick={() => copyToClipboard(fullShareText, "Poem & Link copied! Paste it in your Instagram story or bio.")} className="flex items-center gap-3 bg-pink-50 p-4 rounded-xl font-bold text-pink-700 hover:bg-pink-100 transition text-left"><Instagram className="w-5 h-5 text-pink-600" /> Instagram</button>
             </div>
           </div>
