@@ -305,33 +305,31 @@
 
           // Dark gradient overlay to make text pop against the photo
           const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-          gradient.addColorStop(0, 'rgba(28, 25, 23, 0.4)'); // stone-900 transparent
-          gradient.addColorStop(0.5, 'rgba(28, 25, 23, 0.85)');
-          gradient.addColorStop(1, 'rgba(28, 25, 23, 1)');
+          gradient.addColorStop(0, 'rgba(28, 25, 23, 0.2)'); // Lighter at the top for face visibility
+          gradient.addColorStop(0.5, 'rgba(28, 25, 23, 0.6)');
+          gradient.addColorStop(1, 'rgba(28, 25, 23, 1)'); // Solid dark at bottom
           ctx.fillStyle = gradient;
           ctx.fillRect(0, 0, canvas.width, canvas.height);
 
           // Draw Text
-          const lines = (sharePoem.hindiText || '').split('\n').map(l => l.trim()).filter(l => l.length > 0);
+          const poetName = sharePoem.poetHindi || sharePoem.poet || "Unknown";
 
           ctx.textAlign = 'center';
           
           // Title
           ctx.fillStyle = '#f59e0b'; // amber-500
-          ctx.font = 'bold 70px serif';
-          ctx.fillText(title, canvas.width / 2, 380);
+          ctx.font = 'bold 85px serif';
+          ctx.fillText(title, canvas.width / 2, 700);
 
-          // Hindi Lines (First 3 lines max)
+          // Poet
           ctx.fillStyle = '#ffffff';
-          ctx.font = 'italic 45px serif';
-          if (lines.length > 0) ctx.fillText(lines[0], canvas.width / 2, 530);
-          if (lines.length > 1) ctx.fillText(lines[1], canvas.width / 2, 610);
-          if (lines.length > 2) ctx.fillText(lines[2], canvas.width / 2, 690);
+          ctx.font = 'italic 50px serif';
+          ctx.fillText(`Poet: ${poetName}`, canvas.width / 2, 800);
 
           // Branding footer
           ctx.fillStyle = '#a8a29e'; // stone-400
-          ctx.font = '30px sans-serif';
-          ctx.fillText(`Recited by ${AUTHOR_NAME}`, canvas.width / 2, 950);
+          ctx.font = '35px sans-serif';
+          ctx.fillText(`Recited by ${AUTHOR_NAME}`, canvas.width / 2, 940);
 
           // Trigger Download
           const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
