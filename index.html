@@ -147,7 +147,7 @@
     const transcribeAudio = async (base64Data, mimeType) => {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${getModelName()}:generateContent?key=${apiKey}`;
       const base64Clean = base64Data.split(',')[1];
-      const prompt = "Transcribe this Hindi audio into poetic Hindi (Devanagari). Return only the text.";
+      const prompt = "Transcribe this Hindi media recording into poetic Hindi (Devanagari). Return only the text.";
       try {
         const response = await fetchWithRetry(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType, data: base64Clean } }] }] }) });
         return response.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
@@ -169,18 +169,32 @@
       return r || h || 'Unknown';
     };
 
-    // --- REUSABLE UI COMPONENTS (MOVED OUTSIDE APP TO FIX FOCUS/STATE LOSS) ---
+    // --- REUSABLE UI COMPONENTS ---
 
     const MediaRenderer = ({ url }) => {
       const [isPlaying, setIsPlaying] = useState(false);
       const audioRef = useRef(null);
 
       if (!url) return null;
+      
       const ytUrl = getYouTubeEmbedUrl(url);
       if (ytUrl !== url) return <iframe src={ytUrl} className="w-full aspect-video rounded-[1.5rem] border-0 shadow-lg" allowFullScreen></iframe>;
       
-      const isAudio = url.match(/\.(mp3|wav|m4a|aac|ogg|webm|mp4)(\?.*)?$/i) || url.startsWith('data:audio') || url.includes('rec_');
+      // Determine if media is explicitly a video or audio format
+      const isVideo = url.match(/\.(mp4|webm|mov|mkv)(\?.*)?$/i) || url.startsWith('data:video');
+      const isAudio = !isVideo && (url.match(/\.(mp3|wav|m4a|aac|ogg)(\?.*)?$/i) || url.startsWith('data:audio') || url.includes('rec_'));
       
+      if (isVideo) {
+        return (
+          <video 
+            controls 
+            playsInline 
+            className="w-full aspect-video rounded-[1.5rem] bg-black shadow-lg object-contain" 
+            src={url} 
+          />
+        );
+      }
+
       if (isAudio) {
         const togglePlay = () => {
           if (audioRef.current) {
@@ -224,7 +238,9 @@
           </div>
         );
       }
-      return <video controls className="w-full aspect-video rounded-2xl bg-black mt-4" src={url} />;
+      
+      // Generic fallback
+      return <video controls className="w-full aspect-video rounded-[1.5rem] bg-black mt-4 shadow-lg object-contain" src={url} />;
     };
 
     const Header = ({ goHome, isAdmin, setView, view, setShowAdminLogin }) => (
@@ -253,7 +269,7 @@
     const ShareModal = ({ sharePoem, setSharePoem }) => {
       const [message, setMessage] = useState('');
       const [canNativeShare, setCanNativeShare] = useState(false);
-      const [generatingImage, setGeneratingImage] = useState(false); // FIXED: Moved to top level
+      const [generatingImage, setGeneratingImage] = useState(false); 
 
       useEffect(() => {
         if (navigator.share) {
@@ -272,7 +288,7 @@
       // Text formats for different sharing methods
       const fullShareText = `Listen to "${title}" recited by ${AUTHOR_NAME}:\n\n${url}\n\n${sharePoem.hindiText || ''}`;
       
-      // Facebook-specific copy text (Poem Title, Poet Name, Reciter, and URL)
+      // Facebook-specific copy text
       const fbShareText = `"${title}"\nPoet: ${poetName}\nRecited by ${AUTHOR_NAME}\n\n${url}`;
 
       const generateImageCard = async () => {
@@ -371,7 +387,7 @@
 
       const showMessage = (msg) => {
         setMessage(msg);
-        setTimeout(() => setMessage(''), 5000); // Increased timeout so they can read longer instructions
+        setTimeout(() => setMessage(''), 5000); 
       };
 
       return (
@@ -547,7 +563,8 @@
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
             {filteredPoems.map(p => {
-               const isAudioOnly = p.mediaUrl && (p.mediaUrl.match(/\.(mp3|wav|m4a|aac|ogg|webm|mp4)(\?.*)?$/i) || p.mediaUrl.startsWith('data:audio'));
+               const isVideo = p.mediaUrl && (p.mediaUrl.match(/\.(mp4|webm|mov|mkv)(\?.*)?$/i) || p.mediaUrl.startsWith('data:video') || getYouTubeEmbedUrl(p.mediaUrl) !== p.mediaUrl);
+
                return (
                 <div key={p.id} onClick={() => goToDetail(p)} className="bg-white p-6 rounded-[2rem] border border-stone-100 shadow-sm hover:shadow-2xl hover:border-amber-300 hover:-translate-y-2 transition-all duration-300 cursor-pointer group flex flex-col h-full relative overflow-hidden">
                    <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50 rounded-bl-[80px] -mr-8 -mt-8 opacity-50 group-hover:bg-amber-100 transition-colors"></div>
@@ -563,7 +580,7 @@
                    </div>
                    <div className="relative z-10 flex items-center justify-between pt-4 border-t border-stone-100">
                       <button onClick={(e) => {e.stopPropagation(); setSharePoem(p);}} className="p-3 bg-stone-50 border border-stone-100 rounded-full text-stone-400 hover:text-amber-600 hover:border-amber-200 hover:bg-amber-50 transition shadow-sm"><Share2 className="w-4 h-4"/></button>
-                      {p.mediaUrl && <div className="bg-amber-500 text-white px-5 py-2 rounded-full font-black text-[10px] uppercase tracking-widest flex items-center gap-2 shadow-lg group-hover:bg-amber-600 group-hover:-translate-y-1 transition transform">Listen Now <Play className="w-3 h-3 fill-white"/></div>}
+                      {p.mediaUrl && <div className="bg-amber-500 text-white px-5 py-2 rounded-full font-black text-[10px] uppercase tracking-widest flex items-center gap-2 shadow-lg group-hover:bg-amber-600 group-hover:-translate-y-1 transition transform">{isVideo ? 'Watch Now' : 'Listen Now'} <Play className="w-3 h-3 fill-white"/></div>}
                    </div>
                 </div>
               )})}
@@ -659,6 +676,9 @@
         }
       };
 
+      const isVideoUrl = currentPoem.mediaUrl && (currentPoem.mediaUrl.match(/\.(mp4|webm|mov|mkv)(\?.*)?$/i) || currentPoem.mediaUrl.startsWith('data:video') || getYouTubeEmbedUrl(currentPoem.mediaUrl) !== currentPoem.mediaUrl);
+      const isAudioUrl = currentPoem.mediaUrl && !isVideoUrl;
+
       return (
         <div className="max-w-5xl mx-auto p-4 md:p-6 animate-in slide-in-from-bottom-8 duration-700">
           <div className="flex justify-between items-center mb-8">
@@ -671,7 +691,7 @@
                 
                 {avgRating > 0 && (
                     <div className="flex items-center justify-center gap-2 bg-white text-stone-800 px-4 py-1.5 rounded-full text-sm font-bold w-max mx-auto mb-6 shadow-sm border border-stone-200">
-                        <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
+                        <Star className="w-4 h-4 fill-amber-50 text-amber-500" />
                         {avgRating} ({currentPoem.ratingCount} Reviews)
                     </div>
                 )}
@@ -691,8 +711,8 @@
                 
                 <p className="text-xl text-stone-500 font-serif italic mb-10">— Poet: {currentPoem.poetHindi || currentPoem.poet} —</p>
                 
-                {/* Cinematic Audio Player */}
-                {currentPoem.mediaUrl && (
+                {/* Media Players */}
+                {isAudioUrl && (
                   <div className="max-w-4xl mx-auto bg-stone-900 p-8 md:p-10 rounded-[2rem] shadow-2xl border border-stone-800 relative overflow-hidden text-center transform hover:scale-[1.02] transition duration-500">
                      <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500 rounded-bl-full opacity-10 blur-3xl"></div>
                      <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-600 rounded-tr-full opacity-10 blur-3xl"></div>
@@ -704,6 +724,12 @@
                      <div className="relative z-10 bg-white/10 p-2 rounded-full backdrop-blur-md border border-white/5">
                          <MediaRenderer url={currentPoem.mediaUrl} />
                      </div>
+                  </div>
+                )}
+
+                {isVideoUrl && (
+                  <div className="max-w-4xl mx-auto rounded-[2rem] shadow-2xl overflow-hidden relative border border-stone-200 transform hover:scale-[1.02] transition duration-500">
+                      <MediaRenderer url={currentPoem.mediaUrl} />
                   </div>
                 )}
              </div>
@@ -899,9 +925,11 @@
       const [audioData, setAudioData] = useState(null);
       const [confirmDeleteId, setConfirmDeleteId] = useState(null);
       const [recordingTime, setRecordingTime] = useState(0);
+      const [recordingType, setRecordingType] = useState(null); // 'audio' or 'video'
 
       const mediaRecorder = useRef(null);
       const timerRef = useRef(null);
+      const liveVideoRef = useRef(null);
 
       const handleCreate = () => { 
         setEditingPoem({id:'new'}); 
@@ -974,17 +1002,23 @@
         e.target.value = '';
       };
 
-      const startRecording = async () => {
+      const startRecording = async (type = 'video') => {
         try {
           setFormError('');
           setShowLinkInput(false);
           
           if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            throw new Error("Microphone API is not supported in this browser.");
+            throw new Error("Camera/Microphone API is not supported in this browser.");
           }
 
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+          // Request BOTH audio and video streams if type is video, otherwise just audio
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: type === 'video' });
           
+          // Connect stream to live preview monitor
+          if (liveVideoRef.current && type === 'video') {
+              liveVideoRef.current.srcObject = stream;
+          }
+
           mediaRecorder.current = new MediaRecorder(stream);
           const chunks = [];
           
@@ -996,7 +1030,8 @@
             clearInterval(timerRef.current);
             setRecordingTime(0);
             
-            const mimeType = mediaRecorder.current.mimeType || 'audio/webm';
+            // Default to video/webm or audio/webm based on recording type
+            const mimeType = mediaRecorder.current.mimeType || (type === 'video' ? 'video/webm' : 'audio/webm');
             const blob = new Blob(chunks, { type: mimeType });
             const b64 = await blobToBase64(blob);
             setAudioData({ base64: b64, mimeType: mimeType });
@@ -1017,20 +1052,21 @@
           // Request data every second to prevent memory limits on mobile devices
           mediaRecorder.current.start(1000); 
           setIsRecording(true);
+          setRecordingType(type);
           setRecordingTime(0);
           timerRef.current = setInterval(() => {
              setRecordingTime(prev => prev + 1);
           }, 1000);
           
         } catch(e) { 
-          console.error("Mic error details:", e);
+          console.error("Mic/Cam error details:", e);
           let errorMsg = e.message;
           if (e.name === 'NotAllowedError' || e.message.includes('Permission denied')) {
-             errorMsg = "Permission denied. Please click the lock icon in your browser's URL bar and allow microphone access.";
+             errorMsg = "Permission denied. Please allow microphone and camera access.";
           } else if (e.name === 'NotFoundError') {
-             errorMsg = "No microphone found on this device.";
+             errorMsg = "No camera or microphone found on this device.";
           }
-          setFormError("Microphone error: " + errorMsg); 
+          setFormError("Recording error: " + errorMsg); 
         }
       };
 
@@ -1038,10 +1074,15 @@
         if (mediaRecorder.current) { 
           mediaRecorder.current.stop(); 
           setIsRecording(false); 
+          setRecordingType(null);
           clearInterval(timerRef.current);
-          // Explicitly stop all tracks to release the microphone
+          
+          // Explicitly stop all tracks to release the microphone and camera light
           if (mediaRecorder.current.stream) {
               mediaRecorder.current.stream.getTracks().forEach(track => track.stop());
+          }
+          if (liveVideoRef.current) {
+              liveVideoRef.current.srcObject = null;
           }
         } 
       };
@@ -1120,15 +1161,49 @@
 
                 {/* Media Section */}
                 <div className="bg-stone-50 p-6 md:p-8 rounded-3xl border border-stone-200">
-                  <label className="block text-[10px] font-black uppercase text-stone-500 mb-6 tracking-widest">Audio & Media</label>
-                  <div className="flex flex-wrap gap-3 mb-6">
-                    <button type="button" onClick={isRecording ? stopRecording : startRecording} className={`flex items-center gap-2 px-6 py-3 rounded-full font-black shadow-md transition text-xs uppercase tracking-widest ${isRecording ? 'bg-red-600 text-white animate-pulse' : 'bg-stone-900 text-white hover:bg-stone-800'}`}>
-                      {isRecording ? <StopCircle className="w-4 h-4" /> : <Mic className="w-4 h-4" />} 
-                      {isRecording ? `Stop Recording (${Math.floor(recordingTime/60)}:${(recordingTime%60).toString().padStart(2, '0')})` : 'Record Audio'}
-                    </button>
+                  <label className="block text-[10px] font-black uppercase text-stone-500 mb-6 tracking-widest">Audio & Video Media</label>
+                  
+                  <div className={`mb-6 rounded-[1.5rem] overflow-hidden shadow-lg border border-red-200 relative bg-black max-w-xl mx-auto ${isRecording && recordingType === 'video' ? 'block' : 'hidden'}`}>
+                      <div className="absolute top-4 left-4 bg-red-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full z-10 flex items-center gap-2 shadow-md">
+                          <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span> REC {Math.floor(recordingTime/60)}:{(recordingTime%60).toString().padStart(2, '0')}
+                      </div>
+                      <video ref={liveVideoRef} autoPlay muted playsInline className="w-full max-h-[400px] object-cover aspect-video" />
+                  </div>
+
+                  {isRecording && recordingType === 'audio' && (
+                      <div className="mb-6 bg-red-50 border border-red-200 rounded-[1.5rem] p-6 text-center max-w-xl mx-auto shadow-inner">
+                          <div className="flex justify-center items-center gap-4 mb-2">
+                             <Mic className="w-8 h-8 text-red-500 animate-pulse" />
+                             <div className="flex items-end gap-1 h-8">
+                                <div className="w-2 bg-red-400 rounded-full h-4 animate-[bounce_1s_infinite]"></div>
+                                <div className="w-2 bg-red-500 rounded-full h-8 animate-[bounce_1s_infinite_100ms]"></div>
+                                <div className="w-2 bg-red-600 rounded-full h-5 animate-[bounce_1s_infinite_200ms]"></div>
+                                <div className="w-2 bg-red-500 rounded-full h-7 animate-[bounce_1s_infinite_300ms]"></div>
+                                <div className="w-2 bg-red-400 rounded-full h-3 animate-[bounce_1s_infinite_400ms]"></div>
+                             </div>
+                          </div>
+                          <p className="font-black text-red-600 tracking-widest uppercase text-sm">Recording Audio... {Math.floor(recordingTime/60)}:{(recordingTime%60).toString().padStart(2, '0')}</p>
+                      </div>
+                  )}
+
+                  <div className="flex flex-wrap justify-center gap-3 mb-6">
+                    {!isRecording ? (
+                      <>
+                        <button type="button" onClick={() => startRecording('audio')} className="flex items-center gap-2 px-6 py-3 rounded-full font-black shadow-md transition text-xs uppercase tracking-widest bg-stone-900 text-white hover:bg-stone-800">
+                          <Mic className="w-4 h-4" /> Record Audio
+                        </button>
+                        <button type="button" onClick={() => startRecording('video')} className="flex items-center gap-2 px-6 py-3 rounded-full font-black shadow-md transition text-xs uppercase tracking-widest bg-stone-900 text-white hover:bg-stone-800">
+                          <Video className="w-4 h-4" /> Record Video
+                        </button>
+                      </>
+                    ) : (
+                      <button type="button" onClick={stopRecording} className="flex items-center gap-2 px-6 py-3 rounded-full font-black shadow-md transition text-xs uppercase tracking-widest bg-red-600 text-white animate-pulse">
+                        <StopCircle className="w-4 h-4" /> Stop {recordingType === 'video' ? 'Video' : 'Audio'}
+                      </button>
+                    )}
                     <label className="flex items-center gap-2 px-5 py-3 bg-white border border-stone-200 rounded-full cursor-pointer hover:border-amber-400 transition shadow-sm font-black text-stone-600 text-xs uppercase tracking-widest">
                       <Upload className="w-4 h-4" /> Upload File
-                      <input type="file" accept="audio/*,video/mp4,video/quicktime" onChange={handleFile} className="hidden" />
+                      <input type="file" accept="audio/*,video/mp4,video/quicktime,video/webm" onChange={handleFile} className="hidden" />
                     </label>
                     <button type="button" onClick={() => setShowLinkInput(!showLinkInput)} className={`flex items-center gap-2 px-5 py-3 border rounded-full cursor-pointer transition shadow-sm font-black text-xs uppercase tracking-widest ${showLinkInput ? 'bg-amber-50 border-amber-300 text-amber-700' : 'bg-white border-stone-200 text-stone-600 hover:border-amber-400'}`}>
                       <LinkIcon className="w-4 h-4" /> Paste Link
