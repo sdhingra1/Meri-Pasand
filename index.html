@@ -173,6 +173,7 @@
 
     const MediaRenderer = ({ url }) => {
       const [isPlaying, setIsPlaying] = useState(false);
+      const [playError, setPlayError] = useState(false);
       const audioRef = useRef(null);
 
       if (!url) return null;
@@ -197,25 +198,44 @@
 
       if (isAudio) {
         const togglePlay = () => {
+          setPlayError(false);
           if (audioRef.current) {
             if (isPlaying) {
               audioRef.current.pause();
             } else {
-              audioRef.current.play();
+              // Catch play promise to handle strict WebView blocking
+              const playPromise = audioRef.current.play();
+              if (playPromise !== undefined) {
+                  playPromise.catch(error => {
+                      console.warn("Audio playback blocked by browser/webview:", error);
+                      setIsPlaying(false);
+                      setPlayError(true);
+                      setTimeout(() => setPlayError(false), 4000);
+                  });
+              }
             }
           }
         };
 
         return (
-          <div className="flex flex-col items-center justify-center mt-2 mb-2">
-            <audio 
+          <div className="flex flex-col items-center justify-center mt-2 mb-2 relative">
+            {/* Using video instead of audio tag bypasses the iOS silent switch issue in webviews like WhatsApp */}
+            <video 
                 ref={audioRef} 
                 src={url} 
+                playsInline
                 onEnded={() => setIsPlaying(false)} 
                 onPause={() => setIsPlaying(false)} 
                 onPlay={() => setIsPlaying(true)} 
                 className="hidden" 
             />
+            
+            {playError && (
+               <div className="absolute -top-12 bg-red-600 text-white text-[10px] uppercase tracking-widest font-black px-4 py-2 rounded-full animate-bounce shadow-lg z-10 whitespace-nowrap">
+                  Check Media Volume / Unmute
+               </div>
+            )}
+
             <button 
               onClick={togglePlay}
               className="flex items-center justify-center gap-3 md:gap-4 bg-amber-500 hover:bg-amber-600 text-white px-8 py-4 md:px-12 md:py-5 rounded-full shadow-[0_10px_40px_-10px_rgba(245,158,11,0.6)] hover:shadow-[0_10px_40px_-5px_rgba(245,158,11,0.8)] hover:-translate-y-1 transition-all duration-300 group"
@@ -914,8 +934,12 @@
     };
 
     const AdminDashboard = ({ poems, user }) => {
-      const [editingPoem, setEditingPoem] = useState(null);
-      const [formData, setFormData] = useState({});
+      const [editingPoem, setEditingPoem] = useState(() => {
+        try { const saved = sessionStorage.getItem('mp_editingPoem'); return saved ? JSON.parse(saved) : null; } catch(e) { return null; }
+      });
+      const [formData, setFormData] = useState(() => {
+        try { const saved = sessionStorage.getItem('mp_formData'); return saved ? JSON.parse(saved) : {}; } catch(e) { return {}; }
+      });
       const [aiProcessing, setAiProcessing] = useState(false);
       const [uploading, setUploading] = useState(false);
       const [progress, setProgress] = useState(0);
@@ -930,6 +954,16 @@
       const mediaRecorder = useRef(null);
       const timerRef = useRef(null);
       const liveVideoRef = useRef(null);
+
+      useEffect(() => {
+        if (editingPoem) sessionStorage.setItem('mp_editingPoem', JSON.stringify(editingPoem));
+        else sessionStorage.removeItem('mp_editingPoem');
+      }, [editingPoem]);
+
+      useEffect(() => {
+        if (formData && Object.keys(formData).length > 0) sessionStorage.setItem('mp_formData', JSON.stringify(formData));
+        else sessionStorage.removeItem('mp_formData');
+      }, [formData]);
 
       const handleCreate = () => { 
         setEditingPoem({id:'new'}); 
@@ -1108,6 +1142,7 @@
         if (editingPoem.id === 'new') await addDoc(col, {...formData, createdAt: Date.now()});
         else await updateDoc(doc(db, 'poems', editingPoem.id), {...formData, updatedAt: Date.now()});
         setEditingPoem(null);
+        setFormData({});
       };
 
       const deletePoem = async (id) => {
@@ -1262,7 +1297,7 @@
 
                 <div className="flex gap-4 pt-6 border-t border-stone-100">
                   <button className="flex-grow bg-stone-900 text-white py-5 rounded-2xl font-black uppercase tracking-[0.2em] hover:bg-stone-800 transition shadow-xl hover:-translate-y-1">Publish Composition</button>
-                  <button type="button" onClick={() => setEditingPoem(null)} className="bg-stone-100 px-8 py-5 rounded-2xl font-bold uppercase tracking-widest text-stone-500 hover:bg-stone-200 transition">Cancel</button>
+                  <button type="button" onClick={() => { setEditingPoem(null); setFormData({}); }} className="bg-stone-100 px-8 py-5 rounded-2xl font-bold uppercase tracking-widest text-stone-500 hover:bg-stone-200 transition">Cancel</button>
                 </div>
               </form>
             </div>
@@ -1310,8 +1345,8 @@
 
     function App() {
       const [user, setUser] = useState(null);
-      const [isAdmin, setIsAdmin] = useState(false);
-      const [view, setView] = useState('home');
+      const [isAdmin, setIsAdmin] = useState(() => sessionStorage.getItem('mp_isAdmin') === 'true');
+      const [view, setView] = useState(() => sessionStorage.getItem('mp_view') || 'home');
       const [poems, setPoems] = useState([]);
       const [selectedPoem, setSelectedPoem] = useState(null);
       const [loading, setLoading] = useState(true);
@@ -1319,6 +1354,9 @@
       const [adminPassword, setAdminPassword] = useState('');
       const [loginError, setLoginError] = useState('');
       const [sharePoem, setSharePoem] = useState(null);
+
+      useEffect(() => { sessionStorage.setItem('mp_isAdmin', isAdmin); }, [isAdmin]);
+      useEffect(() => { sessionStorage.setItem('mp_view', view); }, [view]);
 
       useEffect(() => {
         const initAuth = async () => {
